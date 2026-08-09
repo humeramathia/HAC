@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Habibia Archery Club</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_calendar">Calendar</string>
+    <string name="nav_scores">Scores</string>
+    <string name="nav_resources">Resources</string>
+    <string name="nav_profile">Profile</string>
+    <string name="cd_logo">Habibia Archery Club logo</string>
+    <string name="cd_notifications">Notifications</string>
+    <string name="cd_profile">Profile</string>
+    <string name="cd_back">Back</string>
+    <string name="score_saved">Score recorded successfully</string>
+    <string name="profile_updated">Profile updated</string>
+    <string name="event_saved">Event saved successfully</string>
+    <string name="event_deleted">Event deleted</string>
+    <string name="competition_saved">Competition saved successfully</string>
+    <string name="competition_deleted">Competition deleted</string>
+    <string name="announcement_saved">Announcement saved successfully</string>
+    <string name="announcement_deleted">Announcement deleted</string>
+    <string name="resource_saved">Resource saved successfully</string>
+    <string name="resource_deleted">Resource deleted</string>
+    <string name="confirm_delete_title">Confirm delete</string>
+    <string name="confirm_delete_message">Are you sure you want to delete this item?</string>
+    <string name="empty_competitions_title">No upcoming competitions</string>
+    <string name="empty_competitions_body">Check back later for new competition dates.</string>
+    <string name="empty_events_title">No upcoming events</string>
+    <string name="empty_events_body">New club events will appear here.</string>
+    <string name="empty_scores_title">No scores yet</string>
+    <string name="empty_scores_body">Record your first score to start tracking progress.</string>
+    <string name="empty_resources_title">No resources found</string>
+    <string name="empty_resources_body">Try a different search term.</string>
+    <string name="empty_notifications_title">You\'re all caught up</string>
+    <string name="empty_notifications_body">New club updates will show here.</string>
+</resources>

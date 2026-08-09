@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Widget.Habibia.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/habibia_surface</item>
+        <item name="cardCornerRadius">@dimen/radius_md</item>
+        <item name="cardElevation">@dimen/card_elevation</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <style name="Widget.Habibia.BottomNav" parent="Widget.Material3.BottomNavigationView">
+        <item name="backgroundTint">@color/habibia_surface</item>
+        <item name="itemIconTint">@color/habibia_bottom_nav_color</item>
+        <item name="itemTextColor">@color/habibia_bottom_nav_color</item>
+        <item name="itemActiveIndicatorStyle">@style/Widget.Habibia.BottomNav.ActiveIndicator</item>
+        <item name="labelVisibilityMode">labeled</item>
+        <item name="elevation">8dp</item>
+    </style>
+
+    <style name="Widget.Habibia.BottomNav.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">#33E52321</item>
+    </style>
+
+    <style name="Widget.Habibia.Button" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/habibia_red</item>
+        <item name="android:textColor">@color/habibia_text_on_dark</item>
+        <item name="cornerRadius">@dimen/radius_sm</item>
+        <item name="android:minHeight">@dimen/touch_min</item>
+    </style>
+
+    <style name="Widget.Habibia.Button.Secondary" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="strokeColor">@color/habibia_black</item>
+        <item name="android:textColor">@color/habibia_text_primary</item>
+        <item name="cornerRadius">@dimen/radius_sm</item>
+        <item name="android:minHeight">@dimen/touch_min</item>
+    </style>
+
+    <style name="Widget.Habibia.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/habibia_red</item>
+    </style>
+
+    <style name="Text.Habibia.Title" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textColor">@color/habibia_text_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Text.Habibia.Section" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textColor">@color/habibia_text_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Text.Habibia.Body" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textColor">@color/habibia_text_secondary</item>
+    </style>
+
+    <style name="Text.Habibia.Caption" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:textColor">@color/habibia_text_muted</item>
+    </style>
+
+    <style name="Widget.Habibia.Chip.Event" parent="Widget.Material3.Chip.Assist">
+        <item name="chipBackgroundColor">#1A4EBCEB</item>
+        <item name="android:textColor">@color/habibia_blue</item>
+    </style>
+
+    <style name="Widget.Habibia.Chip.Practice" parent="Widget.Material3.Chip.Assist">
+        <item name="chipBackgroundColor">#1A6CCF73</item>
+        <item name="android:textColor">@color/habibia_green_dark</item>
+    </style>
+
+    <style name="Widget.Habibia.Chip.Competition" parent="Widget.Material3.Chip.Assist">
+        <item name="chipBackgroundColor">#1AE52321</item>
+        <item name="android:textColor">@color/habibia_red</item>
+    </style>
+</resources>

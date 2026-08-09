@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Habibia brand palette (from club logo) -->
+    <color name="habibia_black">#FF111111</color>
+    <color name="habibia_charcoal">#FF1C1C1C</color>
+    <color name="habibia_blue">#FF4EBCEB</color>
+    <color name="habibia_red">#FFE52321</color>
+    <color name="habibia_yellow">#FFFDEE00</color>
+    <color name="habibia_green">#FF6CCF73</color>
+    <color name="habibia_green_dark">#FF3E9A4A</color>
+    <color name="habibia_brown">#FF6B4423</color>
+
+    <!-- Surfaces -->
+    <color name="habibia_background">#FFF7F8F9</color>
+    <color name="habibia_surface">#FFFFFFFF</color>
+    <color name="habibia_surface_alt">#FFF0F4F6</color>
+    <color name="habibia_divider">#FFE3E8EB</color>
+    <color name="habibia_overlay">#99000000</color>
+
+    <!-- Text -->
+    <color name="habibia_text_primary">#FF111111</color>
+    <color name="habibia_text_secondary">#FF5C6670</color>
+    <color name="habibia_text_on_dark">#FFFFFFFF</color>
+    <color name="habibia_text_muted">#FF8A939C</color>
+
+    <!-- Status -->
+    <color name="habibia_status_upcoming">#FF4EBCEB</color>
+    <color name="habibia_status_open">#FF6CCF73</color>
+    <color name="habibia_status_closed">#FF8A939C</color>
+    <color name="habibia_unread">#FFE52321</color>
+
+    <!-- Nav -->
+    <color name="habibia_nav_selected">#FFE52321</color>
+    <color name="habibia_nav_unselected">#FF8A939C</color>
+
+    <!-- Legacy -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

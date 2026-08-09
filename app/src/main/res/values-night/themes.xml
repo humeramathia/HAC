@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Base.Theme.HACPrototype" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/habibia_red</item>
+        <item name="colorOnPrimary">@color/habibia_text_on_dark</item>
+        <item name="colorSecondary">@color/habibia_blue</item>
+        <item name="android:statusBarColor">@color/habibia_black</item>
+        <item name="android:windowBackground">@color/habibia_background</item>
+        <item name="materialCardViewStyle">@style/Widget.Habibia.Card</item>
+        <item name="bottomNavigationStyle">@style/Widget.Habibia.BottomNav</item>
+    </style>
+</resources>
