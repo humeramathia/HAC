@@ -203,7 +203,7 @@ class MemberDashboardFragment : Fragment() {
             bar.layoutParams = params
             bar.background = GradientDrawable().apply {
                 cornerRadius = 8f
-                setColor(Color.parseColor("#E52321"))
+                setColor(Color.parseColor("#9ABA55"))
             }
             container.addView(bar)
         }
@@ -263,8 +263,8 @@ class ClubCalendarFragment : Fragment() {
             val chip = item.findViewById<TextView>(R.id.eventTypeChip)
             chip.text = event.type.uppercase()
             chip.setChipStyle(
-                if (event.type.equals("Practice", true)) Color.parseColor("#1A6CCF73") else Color.parseColor("#1A4EBCEB"),
-                if (event.type.equals("Practice", true)) Color.parseColor("#3E9A4A") else Color.parseColor("#4EBCEB")
+                if (event.type.equals("Practice", true)) Color.parseColor("#1A9ABA55") else Color.parseColor("#1A528FD0"),
+                if (event.type.equals("Practice", true)) Color.parseColor("#7A9A3E") else Color.parseColor("#528FD0")
             )
             item.findViewById<TextView>(R.id.eventTitle).text = event.title
             item.findViewById<TextView>(R.id.eventDate).text = formatDisplayDate(event.eventDate)
@@ -281,7 +281,7 @@ class ClubCalendarFragment : Fragment() {
             val item = layoutInflater.inflate(R.layout.item_event_card, container, false)
             val chip = item.findViewById<TextView>(R.id.eventTypeChip)
             chip.text = "COMPETITION"
-            chip.setChipStyle(Color.parseColor("#1AE52321"), Color.parseColor("#E52321"))
+            chip.setChipStyle(Color.parseColor("#1AFE3B3A"), Color.parseColor("#FE3B3A"))
             item.findViewById<TextView>(R.id.eventTitle).text = competition.competitionName
             item.findViewById<TextView>(R.id.eventDate).text = formatDisplayDate(competition.competitionDate)
             item.findViewById<TextView>(R.id.eventTime).text = "All day"
@@ -427,7 +427,7 @@ class NotificationFragment : Fragment() {
                 item.findViewById<TextView>(R.id.notificationMessage).text = notification.message
                 item.findViewById<TextView>(R.id.notificationDate).text = notification.dateSent
                 if (!notification.isRead) {
-                    item.setBackgroundColor(Color.parseColor("#14E52321"))
+                    item.setBackgroundColor(Color.parseColor("#14FE3B3A"))
                 }
                 item.setOnClickListener {
                     notification.isRead = true
@@ -592,7 +592,7 @@ class ProgressFragment : Fragment() {
             val label = TextView(requireContext()).apply {
                 text = score.scoreValue.toString()
                 textSize = 11f
-                setTextColor(Color.parseColor("#5C6670"))
+                setTextColor(Color.parseColor("#6B7580"))
                 gravity = Gravity.CENTER
             }
             val bar = View(requireContext())
@@ -600,7 +600,7 @@ class ProgressFragment : Fragment() {
             bar.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height)
             bar.background = GradientDrawable().apply {
                 cornerRadius = 10f
-                colors = intArrayOf(Color.parseColor("#E52321"), Color.parseColor("#4EBCEB"))
+                colors = intArrayOf(Color.parseColor("#9ABA55"), Color.parseColor("#528FD0"))
                 orientation = GradientDrawable.Orientation.BOTTOM_TOP
             }
             col.addView(label)

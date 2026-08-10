@@ -19,7 +19,7 @@
             android:layout_width="56dp"
             android:layout_height="wrap_content"
             android:text="81"
-            android:textColor="@color/habibia_red"
+            android:textColor="@color/habibia_green"
             android:textSize="28sp"
             android:textStyle="bold" />
 

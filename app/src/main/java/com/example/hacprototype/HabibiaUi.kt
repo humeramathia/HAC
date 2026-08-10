@@ -87,13 +87,13 @@ fun formatDisplayDate(iso: String): String {
 }
 
 fun competitionStatusColor(status: String): Int = when (status.uppercase()) {
-    "REGISTRATION OPEN" -> Color.parseColor("#1A6CCF73")
-    "CLOSED" -> Color.parseColor("#1A8A939C")
-    else -> Color.parseColor("#1A4EBCEB")
+    "REGISTRATION OPEN" -> Color.parseColor("#1A9ABA55")
+    "CLOSED" -> Color.parseColor("#1A6B7580")
+    else -> Color.parseColor("#1A528FD0")
 }
 
 fun competitionStatusTextColor(status: String): Int = when (status.uppercase()) {
-    "REGISTRATION OPEN" -> Color.parseColor("#3E9A4A")
-    "CLOSED" -> Color.parseColor("#8A939C")
-    else -> Color.parseColor("#4EBCEB")
+    "REGISTRATION OPEN" -> Color.parseColor("#7A9A3E")
+    "CLOSED" -> Color.parseColor("#6B7580")
+    else -> Color.parseColor("#528FD0")
 }
