@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Soft-edged Habibia geometric decorations (website-style corner accents) -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Top-start -->
+    <FrameLayout
+        android:layout_width="176dp"
+        android:layout_height="176dp"
+        android:layout_gravity="top|start"
+        android:clickable="false"
+        android:focusable="false">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0.88"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:scaleType="fitStart"
+            android:src="@drawable/desgin" />
+
+        <View
+            android:layout_width="72dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:background="@drawable/fade_to_end" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:layout_gravity="bottom"
+            android:background="@drawable/fade_to_bottom" />
+    </FrameLayout>
+
+    <!-- Top-end -->
+    <FrameLayout
+        android:layout_width="140dp"
+        android:layout_height="140dp"
+        android:layout_gravity="top|end"
+        android:clickable="false"
+        android:focusable="false">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0.72"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:scaleType="fitStart"
+            android:scaleX="-1"
+            android:src="@drawable/desgin" />
+
+        <View
+            android:layout_width="64dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            android:background="@drawable/fade_to_start" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_gravity="bottom"
+            android:background="@drawable/fade_to_bottom" />
+    </FrameLayout>
+
+    <!-- Bottom-start -->
+    <FrameLayout
+        android:layout_width="128dp"
+        android:layout_height="128dp"
+        android:layout_gravity="bottom|start"
+        android:clickable="false"
+        android:focusable="false">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0.68"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:scaleType="fitStart"
+            android:scaleY="-1"
+            android:src="@drawable/desgin" />
+
+        <View
+            android:layout_width="56dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:background="@drawable/fade_to_end" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_gravity="top"
+            android:background="@drawable/fade_to_top" />
+    </FrameLayout>
+
+    <!-- Bottom-end -->
+    <FrameLayout
+        android:layout_width="164dp"
+        android:layout_height="164dp"
+        android:layout_gravity="bottom|end"
+        android:clickable="false"
+        android:focusable="false">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0.8"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:scaleType="fitStart"
+            android:scaleX="-1"
+            android:scaleY="-1"
+            android:src="@drawable/desgin" />
+
+        <View
+            android:layout_width="68dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            android:background="@drawable/fade_to_start" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="68dp"
+            android:layout_gravity="top"
+            android:background="@drawable/fade_to_top" />
+    </FrameLayout>
+</merge>
