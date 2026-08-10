@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Refined 2dp green → blue border, ~26dp corners -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="0"
+                android:endColor="#B3528FD0"
+                android:startColor="#B39ABA55"
+                android:type="linear" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+    <item
+        android:bottom="2dp"
+        android:left="2dp"
+        android:right="2dp"
+        android:top="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/habibia_surface" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+</layer-list>

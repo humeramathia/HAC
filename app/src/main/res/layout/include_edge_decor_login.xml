@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Login-only: small symmetrical top-corner accents, centre kept clear -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <FrameLayout
+        android:layout_width="110dp"
+        android:layout_height="110dp"
+        android:layout_gravity="top|start"
+        android:clickable="false"
+        android:focusable="false">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0.55"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:scaleType="fitStart"
+            android:src="@drawable/desgin" />
+
+        <View
+            android:layout_width="56dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:background="@drawable/fade_to_end" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_gravity="bottom"
+            android:background="@drawable/fade_to_bottom" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="110dp"
+        android:layout_height="110dp"
+        android:layout_gravity="top|end"
+        android:clickable="false"
+        android:focusable="false">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0.55"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:scaleType="fitStart"
+            android:scaleX="-1"
+            android:src="@drawable/desgin" />
+
+        <View
+            android:layout_width="56dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            android:background="@drawable/fade_to_start" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_gravity="bottom"
+            android:background="@drawable/fade_to_bottom" />
+    </FrameLayout>
+</merge>

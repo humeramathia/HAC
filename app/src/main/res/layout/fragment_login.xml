@@ -1,121 +1,240 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/habibia_background">
 
-    <include layout="@layout/include_edge_decor" />
+    <include layout="@layout/include_edge_decor_login" />
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@android:color/transparent"
         android:fillViewport="true"
-        android:background="@android:color/transparent">
+        android:overScrollMode="never">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_horizontal|center_vertical"
             android:orientation="vertical"
-            android:padding="24dp">
-
-            <ImageView
-                android:id="@+id/login_logo"
-                android:layout_width="96dp"
-                android:layout_height="96dp"
-                android:layout_gravity="center_horizontal"
-                android:contentDescription="@string/cd_logo"
-                android:src="@drawable/logo" />
+            android:paddingStart="28dp"
+            android:paddingTop="24dp"
+            android:paddingEnd="28dp"
+            android:paddingBottom="32dp">
 
             <TextView
                 android:id="@+id/loginTitle"
                 style="@style/Text.Habibia.Title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
                 android:text="Habibia Archery Club"
-                android:textAlignment="center" />
+                android:textAlignment="center"
+                android:textSize="26sp" />
 
             <TextView
-                style="@style/Text.Habibia.Body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="10dp"
                 android:text="Revive the Sunnah"
                 android:textAlignment="center"
                 android:textColor="@color/habibia_green"
+                android:textSize="17sp"
                 android:textStyle="bold" />
 
             <TextView
-                style="@style/Text.Habibia.Caption"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="14dp"
                 android:text="Sign in to continue"
                 android:textAlignment="center"
-                android:textAllCaps="false" />
+                android:textColor="@color/habibia_text_muted"
+                android:textSize="13sp" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/emailTil"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            <!-- Email -->
+            <LinearLayout
+                android:id="@+id/emailFieldContainer"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:hint="Email">
+                android:layout_height="56dp"
+                android:layout_marginTop="40dp"
+                android:background="@drawable/bg_habibia_input"
+                android:elevation="1.5dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp">
+
+                <ImageView
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_email" />
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/emailInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textEmailAddress" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:hint="Email"
+                    android:importantForAutofill="no"
+                    android:inputType="textEmailAddress"
+                    android:textColor="@color/habibia_text_primary"
+                    android:textColorHint="@color/habibia_text_muted"
+                    android:textSize="16sp" />
+            </LinearLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/passwordTil"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            <TextView
+                android:id="@+id/emailError"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="Password"
-                app:endIconMode="password_toggle">
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/habibia_red"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <!-- Password -->
+            <LinearLayout
+                android:id="@+id/passwordFieldContainer"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_habibia_input"
+                android:elevation="1.5dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="8dp">
+
+                <ImageView
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_lock" />
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/passwordInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textPassword" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:hint="Password"
+                    android:importantForAutofill="no"
+                    android:inputType="textPassword"
+                    android:textColor="@color/habibia_text_primary"
+                    android:textColorHint="@color/habibia_text_muted"
+                    android:textSize="16sp" />
 
-            <Button
+                <ImageButton
+                    android:id="@+id/passwordToggle"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Show or hide password"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_visibility" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/passwordError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/habibia_red"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <!-- Login: gradient primary, pattern ~15% opacity -->
+            <FrameLayout
                 android:id="@+id/loginButton"
-                style="@style/Widget.Habibia.Button"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:layout_marginTop="20dp"
-                android:text="Login" />
+                android:background="@drawable/bg_habibia_button_login_ring"
+                android:clickable="true"
+                android:elevation="3dp"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground">
 
-            <Button
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="2dp"
+                    android:background="@drawable/bg_habibia_button_gradient"
+                    android:clipToOutline="true">
+
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:alpha="0.12"
+                        android:contentDescription="@null"
+                        android:importantForAccessibility="no"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/desgin" />
+
+                    <!-- Soft wash so pattern stays texture-only -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="#33FFFFFF" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="Login"
+                        android:textColor="@color/habibia_black"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+                </FrameLayout>
+            </FrameLayout>
+
+            <TextView
                 android:id="@+id/registerButton"
-                style="@style/Widget.Habibia.Button.Secondary"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Create Account" />
+                android:layout_height="56dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_habibia_button_outline"
+                android:clickable="true"
+                android:elevation="1.5dp"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:text="Create Account"
+                android:textColor="@color/habibia_blue"
+                android:textSize="16sp" />
 
-            <Button
+            <TextView
                 android:id="@+id/demoMemberButton"
-                style="@style/Widget.Habibia.Button.Text"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Demo Member" />
+                android:layout_marginTop="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
+                android:text="Demo Member"
+                android:textColor="@color/habibia_blue"
+                android:textSize="15sp" />
 
-            <Button
+            <TextView
                 android:id="@+id/demoAdminButton"
-                style="@style/Widget.Habibia.Button.Text"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Demo Admin" />
+                android:layout_marginBottom="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
+                android:text="Demo Admin"
+                android:textColor="@color/habibia_blue"
+                android:textSize="15sp" />
         </LinearLayout>
     </ScrollView>
 </FrameLayout>

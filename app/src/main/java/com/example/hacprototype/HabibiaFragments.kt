@@ -28,33 +28,55 @@ class SplashFragment : Fragment() {
 }
 
 class LoginFragment : Fragment() {
+    private var passwordVisible = false
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_login, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        view.findViewById<Button>(R.id.loginButton).setOnClickListener {
-            val email = view.findViewById<TextInputEditText>(R.id.emailInput).text?.toString().orEmpty()
-            val password = view.findViewById<TextInputEditText>(R.id.passwordInput).text?.toString().orEmpty()
-            val emailTil = view.findViewById<TextInputLayout>(R.id.emailTil)
-            val passwordTil = view.findViewById<TextInputLayout>(R.id.passwordTil)
-            emailTil.error = null
-            passwordTil.error = null
+        val emailInput = view.findViewById<TextInputEditText>(R.id.emailInput)
+        val passwordInput = view.findViewById<TextInputEditText>(R.id.passwordInput)
+        val emailError = view.findViewById<TextView>(R.id.emailError)
+        val passwordError = view.findViewById<TextView>(R.id.passwordError)
+        val passwordToggle = view.findViewById<ImageButton>(R.id.passwordToggle)
+
+        passwordToggle.setOnClickListener {
+            passwordVisible = !passwordVisible
+            if (passwordVisible) {
+                passwordInput.inputType =
+                    android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                passwordToggle.setImageResource(R.drawable.ic_visibility_off)
+            } else {
+                passwordInput.inputType =
+                    android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+                passwordToggle.setImageResource(R.drawable.ic_visibility)
+            }
+            passwordInput.setSelection(passwordInput.text?.length ?: 0)
+        }
+
+        view.findViewById<View>(R.id.loginButton).setOnClickListener {
+            val email = emailInput.text?.toString().orEmpty()
+            val password = passwordInput.text?.toString().orEmpty()
+            emailError.visibility = View.GONE
+            passwordError.visibility = View.GONE
             var valid = true
             if (email.isBlank()) {
-                emailTil.error = "Email is required"
+                emailError.text = "Email is required"
+                emailError.visibility = View.VISIBLE
                 valid = false
             }
             if (password.isBlank()) {
-                passwordTil.error = "Password is required"
+                passwordError.text = "Password is required"
+                passwordError.visibility = View.VISIBLE
                 valid = false
             }
             if (!valid) return@setOnClickListener
             if (email.contains("admin", ignoreCase = true)) openAdminApp() else openMemberApp()
         }
-        view.findViewById<Button>(R.id.registerButton).setOnClickListener { goTo(RegisterFragment()) }
-        view.findViewById<Button>(R.id.demoMemberButton).setOnClickListener { openMemberApp() }
-        view.findViewById<Button>(R.id.demoAdminButton).setOnClickListener { openAdminApp() }
+        view.findViewById<View>(R.id.registerButton).setOnClickListener { goTo(RegisterFragment()) }
+        view.findViewById<View>(R.id.demoMemberButton).setOnClickListener { openMemberApp() }
+        view.findViewById<View>(R.id.demoAdminButton).setOnClickListener { openAdminApp() }
     }
 }
 
