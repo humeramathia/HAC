@@ -31,82 +31,102 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="24dp">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/scoreTil"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            <ImageView
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:contentDescription="@string/cd_logo"
+                android:src="@drawable/logo" />
+
+            <TextView
+                style="@style/Text.Habibia.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="What are you shooting?" />
+
+            <TextView
+                style="@style/Text.Habibia.Body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Score">
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="Choose a session type. You will enter each arrow, and the app will calculate the totals." />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/scoreInput"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/practiceChoiceCard"
+                android:layout_width="match_parent"
+                android:layout_height="132dp"
+                android:layout_marginTop="28dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="number" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_score_choice_practice"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/dateTil"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Practice"
+                        android:textColor="@color/habibia_text_primary"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Set your own distance, arrows and rounds"
+                        android:textColor="@color/habibia_text_primary" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/leagueChoiceCard"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="Date (YYYY-MM-DD)">
+                android:layout_height="132dp"
+                android:layout_marginTop="14dp"
+                android:clickable="true"
+                android:focusable="true">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/dateInput"
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="date" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_score_choice_league"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/eventTil"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="Event / Competition">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="League"
+                        android:textColor="@color/habibia_text_on_dark"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/eventInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textCapWords" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/notesTil"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="Notes">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/notesInput"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="top"
-                    android:inputType="textMultiLine"
-                    android:minLines="3" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <Button
-                android:id="@+id/saveScoreButton"
-                style="@style/Widget.Habibia.Button"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Save Score" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Standard 60-arrow indoor league round"
+                        android:textColor="@color/habibia_text_on_dark" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

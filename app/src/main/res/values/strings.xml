@@ -29,6 +29,12 @@
     <string name="empty_events_body">New club events will appear here.</string>
     <string name="empty_scores_title">No scores yet</string>
     <string name="empty_scores_body">Record your first score to start tracking progress.</string>
+    <string name="empty_practice_title">No practice sessions yet</string>
+    <string name="empty_practice_body">Start a practice session to record arrows and track progress.</string>
+    <string name="empty_league_title">No league rounds yet</string>
+    <string name="empty_league_body">Start a league round to record ends and view your results.</string>
+    <string name="session_saved">Session saved to your score history</string>
+    <string name="invalid_arrow_score">Enter 0–10 or X</string>
     <string name="empty_resources_title">No resources found</string>
     <string name="empty_resources_body">Try a different search term.</string>
     <string name="empty_notifications_title">You\'re all caught up</string>

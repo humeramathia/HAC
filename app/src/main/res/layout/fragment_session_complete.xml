@@ -10,10 +10,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="8dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="8dp">
+        android:padding="8dp">
 
         <ImageButton
             android:id="@+id/backButton"
@@ -25,10 +22,11 @@
             android:src="@drawable/ic_back" />
 
         <TextView
+            android:id="@+id/completeHeader"
             style="@style/Text.Habibia.Title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Score Details" />
+            android:text="Session complete" />
     </LinearLayout>
 
     <ScrollView
@@ -50,57 +48,45 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="24dp">
 
                     <TextView
-                        android:id="@+id/detailTypeChip"
-                        style="@style/Widget.Habibia.Chip.Practice"
+                        android:id="@+id/completeTitle"
+                        style="@style/Text.Habibia.Section"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingStart="12dp"
-                        android:paddingTop="4dp"
-                        android:paddingEnd="12dp"
-                        android:paddingBottom="4dp"
-                        android:text="Practice" />
+                        android:text="Practice complete" />
 
                     <TextView
-                        android:id="@+id/detailTitle"
-                        style="@style/Text.Habibia.Section"
-                        android:layout_width="match_parent"
+                        android:id="@+id/completeDistance"
+                        style="@style/Text.Habibia.Caption"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:text="Saturday Practice" />
+                        android:layout_marginTop="6dp"
+                        android:text="18 M" />
 
                     <TextView
-                        android:id="@+id/detailMeta"
-                        style="@style/Text.Habibia.Body"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="12 September 2026 • 18 m" />
-
-                    <TextView
-                        android:id="@+id/detailScore"
+                        android:id="@+id/completeScore"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="524 / 600"
                         android:textColor="@color/habibia_green"
-                        android:textSize="36sp"
+                        android:textSize="40sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
-                android:id="@+id/detailStatsRow1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:orientation="horizontal">
 
                 <include
-                    android:id="@+id/detailAverage"
+                    android:id="@+id/statAverage"
                     layout="@layout/item_stat_tile"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -108,7 +94,7 @@
                     android:layout_weight="1" />
 
                 <include
-                    android:id="@+id/detailArrows"
+                    android:id="@+id/statArrows"
                     layout="@layout/item_stat_tile"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -123,7 +109,7 @@
                 android:orientation="horizontal">
 
                 <include
-                    android:id="@+id/detailTens"
+                    android:id="@+id/statTens"
                     layout="@layout/item_stat_tile"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -131,7 +117,7 @@
                     android:layout_weight="1" />
 
                 <include
-                    android:id="@+id/detailXs"
+                    android:id="@+id/statXs"
                     layout="@layout/item_stat_tile"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -139,27 +125,51 @@
                     android:layout_weight="1" />
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/detailNotes"
-                style="@style/Text.Habibia.Body"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Notes" />
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
 
-            <TextView
-                style="@style/Text.Habibia.Section"
-                android:layout_width="wrap_content"
+                <include
+                    android:id="@+id/statBest"
+                    layout="@layout/item_stat_tile"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1" />
+
+                <include
+                    android:id="@+id/statRounds"
+                    layout="@layout/item_stat_tile"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/viewDetailsButton"
+                style="@style/Widget.Habibia.Button"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="Round breakdown" />
+                android:text="View score details" />
 
-            <LinearLayout
-                android:id="@+id/endsContainer"
+            <Button
+                android:id="@+id/viewProgressButton"
+                style="@style/Widget.Habibia.Button.Secondary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:orientation="vertical" />
+                android:text="View progress" />
+
+            <Button
+                android:id="@+id/backToHistoryButton"
+                style="@style/Widget.Habibia.Button.Text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Back to scores" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

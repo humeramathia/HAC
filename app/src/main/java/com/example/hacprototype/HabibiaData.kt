@@ -50,6 +50,74 @@ data class Score(
     var notes: String
 )
 
+enum class SessionType { PRACTICE, LEAGUE }
+
+data class ArrowScore(
+    val value: Int,
+    val isX: Boolean = false
+) {
+    val label: String get() = if (isX) "X" else value.toString()
+}
+
+data class ScoreEnd(
+    val endNumber: Int,
+    val arrows: MutableList<ArrowScore> = mutableListOf()
+) {
+    val total: Int get() = arrows.sumOf { it.value }
+    fun arrowLabels(): String = arrows.joinToString("  |  ") { it.label }
+}
+
+data class ScoreSession(
+    val sessionId: String,
+    val memberId: String,
+    val type: SessionType,
+    var title: String,
+    var distanceMeters: Int,
+    var arrowsPerEnd: Int,
+    var numberOfEnds: Int,
+    var date: String,
+    var notes: String = "",
+    var ends: MutableList<ScoreEnd> = mutableListOf(),
+    var ranking: Int? = null,
+    var fieldSize: Int? = null,
+    var leagueName: String? = null
+) {
+    val totalArrows: Int get() = arrowsPerEnd * numberOfEnds
+    val maxScore: Int get() = totalArrows * 10
+    val totalScore: Int get() = ends.sumOf { it.total }
+    val arrowsShot: Int get() = ends.sumOf { it.arrows.size }
+    val completedEnds: Int get() = ends.size
+    val averageArrow: Double
+        get() = if (arrowsShot == 0) 0.0 else totalScore.toDouble() / arrowsShot
+    val averageEnd: Double
+        get() = if (ends.isEmpty()) 0.0 else ends.map { it.total }.average()
+    val tensCount: Int
+        get() = ends.sumOf { end -> end.arrows.count { it.value == 10 } }
+    val xCount: Int
+        get() = ends.sumOf { end -> end.arrows.count { it.isX } }
+    val highestEnd: Int get() = ends.maxOfOrNull { it.total } ?: 0
+    val lowestEnd: Int get() = ends.minOfOrNull { it.total } ?: 0
+    val typeLabel: String get() = if (type == SessionType.PRACTICE) "Practice" else "League"
+    val distanceLabel: String get() = "$distanceMeters m"
+    val scoreLabel: String get() = "$totalScore / $maxScore"
+
+    fun toScore(): Score = Score(
+        scoreId = sessionId,
+        memberId = memberId,
+        scoreValue = totalScore,
+        scoreDate = date,
+        event = title,
+        notes = notes
+    )
+}
+
+object LeagueStandard {
+    const val TOTAL_ARROWS = 60
+    const val ARROWS_PER_END = 6
+    const val DEFAULT_DISTANCE = 18
+    val numberOfEnds: Int get() = TOTAL_ARROWS / ARROWS_PER_END
+}
+
 data class Announcement(
     val announcementId: String,
     var title: String,
@@ -79,6 +147,7 @@ object HabibiaSession {
     var selectedEventId: String? = null
     var selectedCompetitionId: String? = null
     var selectedScoreId: String? = null
+    var selectedSessionId: String? = null
     var selectedResourceId: String? = null
     var selectedAnnouncementId: String? = null
     var editingEventId: String? = null
@@ -87,6 +156,9 @@ object HabibiaSession {
     var editingResourceId: String? = null
     var pendingSnackbar: String? = null
     var progressRange: String = "MONTH"
+    var progressType: SessionType = SessionType.PRACTICE
+    var draftSession: ScoreSession? = null
+    var currentEndArrows: MutableList<ArrowScore> = mutableListOf()
 }
 
 object HabibiaDummyData {
@@ -138,12 +210,166 @@ object HabibiaDummyData {
         Competition("C003", "Regional Outdoor Shoot", "2026-10-24", "2026-10-08", "Cape Town Range", "Outdoor target scoring competition.", "UPCOMING")
     )
 
-    val scores = mutableListOf(
-        Score("S001", "M001", 72, "2026-09-10", "Saturday Practice", "Strong morning practice, consistent 10s."),
-        Score("S002", "M001", 78, "2026-09-03", "Club Training", "Good shot sequence and scoring."),
-        Score("S003", "M001", 81, "2026-08-28", "Monthly Shoot", "Best score this month."),
-        Score("S004", "M001", 76, "2026-08-17", "Club Training", "Improved focus after warm-up.")
+    val scoreSessions = mutableListOf(
+        buildSession(
+            id = "PS001",
+            type = SessionType.PRACTICE,
+            title = "Saturday Practice",
+            distance = 18,
+            date = "2026-09-12",
+            notes = "Strong grouping after the warm-up ends.",
+            arrowsPerEnd = 6,
+            ends = listOf(
+                listOf("9", "8", "10", "9", "7", "9"),
+                listOf("10", "9", "8", "9", "X", "8"),
+                listOf("8", "7", "9", "8", "10", "8"),
+                listOf("10", "9", "9", "8", "8", "9"),
+                listOf("8", "9", "7", "10", "8", "9"),
+                listOf("10", "X", "9", "9", "8", "9"),
+                listOf("7", "8", "10", "8", "8", "8"),
+                listOf("9", "8", "10", "8", "9", "8"),
+                listOf("X", "9", "9", "9", "8", "9"),
+                listOf("9", "10", "8", "9", "9", "9")
+            )
+        ),
+        buildSession(
+            id = "PS002",
+            type = SessionType.PRACTICE,
+            title = "Evening Practice",
+            distance = 20,
+            date = "2026-09-10",
+            notes = "Worked on clicker timing at 20 m.",
+            arrowsPerEnd = 6,
+            ends = listOf(
+                listOf("8", "8", "9", "7", "8", "8"),
+                listOf("9", "8", "8", "9", "7", "8"),
+                listOf("8", "9", "10", "8", "8", "7"),
+                listOf("9", "8", "7", "8", "9", "8"),
+                listOf("8", "7", "9", "8", "8", "8"),
+                listOf("9", "9", "8", "8", "7", "8"),
+                listOf("8", "8", "9", "7", "8", "9"),
+                listOf("7", "8", "8", "9", "8", "8"),
+                listOf("9", "8", "8", "8", "7", "9"),
+                listOf("8", "9", "8", "8", "8", "8")
+            )
+        ),
+        buildSession(
+            id = "PS003",
+            type = SessionType.PRACTICE,
+            title = "Club Training",
+            distance = 18,
+            date = "2026-09-03",
+            notes = "Good shot sequence through the middle ends.",
+            arrowsPerEnd = 6,
+            ends = listOf(
+                listOf("8", "9", "9", "8", "8", "9"),
+                listOf("9", "10", "8", "8", "9", "8"),
+                listOf("8", "8", "9", "9", "8", "8"),
+                listOf("10", "9", "8", "9", "8", "8"),
+                listOf("9", "8", "8", "9", "9", "8"),
+                listOf("8", "9", "10", "8", "8", "9"),
+                listOf("9", "8", "8", "8", "9", "8"),
+                listOf("8", "9", "9", "8", "8", "8"),
+                listOf("9", "8", "10", "8", "8", "9"),
+                listOf("8", "9", "8", "9", "8", "9")
+            )
+        ),
+        buildSession(
+            id = "PS004",
+            type = SessionType.PRACTICE,
+            title = "Outdoor Practice",
+            distance = 30,
+            date = "2026-08-22",
+            notes = "Windy first half, settled later.",
+            arrowsPerEnd = 6,
+            ends = listOf(
+                listOf("7", "8", "8", "7", "8", "8"),
+                listOf("8", "8", "9", "7", "8", "8"),
+                listOf("8", "9", "8", "8", "7", "8"),
+                listOf("9", "8", "8", "8", "8", "8"),
+                listOf("8", "8", "9", "8", "8", "7"),
+                listOf("8", "9", "8", "8", "8", "8"),
+                listOf("9", "8", "8", "9", "8", "8"),
+                listOf("8", "8", "9", "8", "8", "8")
+            )
+        ),
+        buildSession(
+            id = "LS001",
+            type = SessionType.LEAGUE,
+            title = "September League",
+            distance = 18,
+            date = "2026-09-18",
+            notes = "Solid qualification-style indoor round.",
+            arrowsPerEnd = LeagueStandard.ARROWS_PER_END,
+            ends = listOf(
+                listOf("10", "X", "9", "9", "9", "9"),
+                listOf("10", "10", "9", "9", "8", "9"),
+                listOf("9", "10", "9", "9", "8", "9"),
+                listOf("10", "9", "8", "9", "9", "8"),
+                listOf("10", "X", "9", "9", "9", "8"),
+                listOf("9", "10", "9", "9", "8", "9"),
+                listOf("8", "9", "10", "8", "9", "8"),
+                listOf("10", "X", "10", "9", "8", "9"),
+                listOf("9", "9", "10", "8", "8", "9"),
+                listOf("10", "9", "9", "9", "8", "9")
+            ),
+            ranking = 2,
+            fieldSize = 12,
+            leagueName = "September League"
+        ),
+        buildSession(
+            id = "LS002",
+            type = SessionType.LEAGUE,
+            title = "August League",
+            distance = 18,
+            date = "2026-08-21",
+            notes = "Held form through the last four ends.",
+            arrowsPerEnd = LeagueStandard.ARROWS_PER_END,
+            ends = listOf(
+                listOf("9", "10", "9", "8", "9", "8"),
+                listOf("10", "9", "9", "8", "9", "8"),
+                listOf("9", "9", "8", "10", "8", "9"),
+                listOf("8", "9", "10", "8", "9", "8"),
+                listOf("10", "X", "8", "9", "8", "9"),
+                listOf("9", "8", "9", "9", "8", "9"),
+                listOf("8", "10", "9", "8", "8", "9"),
+                listOf("9", "9", "9", "8", "10", "8"),
+                listOf("10", "8", "9", "9", "8", "8"),
+                listOf("9", "9", "8", "10", "8", "9")
+            ),
+            ranking = 3,
+            fieldSize = 12,
+            leagueName = "August League"
+        ),
+        buildSession(
+            id = "LS003",
+            type = SessionType.LEAGUE,
+            title = "July League",
+            distance = 18,
+            date = "2026-07-17",
+            notes = "First indoor league of the season.",
+            arrowsPerEnd = LeagueStandard.ARROWS_PER_END,
+            ends = listOf(
+                listOf("8", "9", "9", "8", "9", "8"),
+                listOf("9", "8", "10", "8", "8", "9"),
+                listOf("8", "9", "8", "9", "8", "9"),
+                listOf("9", "9", "8", "8", "9", "8"),
+                listOf("10", "8", "8", "9", "8", "8"),
+                listOf("8", "9", "9", "8", "9", "8"),
+                listOf("9", "8", "8", "10", "8", "8"),
+                listOf("8", "9", "9", "8", "8", "9"),
+                listOf("9", "8", "10", "8", "8", "8"),
+                listOf("8", "9", "8", "9", "9", "8")
+            ),
+            ranking = 4,
+            fieldSize = 11,
+            leagueName = "July League"
+        )
     )
+
+    val scores = mutableListOf<Score>().apply {
+        addAll(scoreSessions.map { it.toScore() })
+    }
 
     val announcements = mutableListOf(
         Announcement("A001", "New Indoor League", "The indoor league begins this Saturday.", "2026-09-02"),
@@ -172,15 +398,42 @@ object HabibiaDummyData {
     fun memberScores(): List<Score> = scores.filter { it.memberId == member.memberId }
         .sortedByDescending { it.scoreDate }
 
-    fun latestScore(): Score? = memberScores().firstOrNull()
+    fun memberSessions(): List<ScoreSession> = scoreSessions
+        .filter { it.memberId == member.memberId }
+        .sortedByDescending { it.date }
+
+    fun practiceSessions(): List<ScoreSession> =
+        memberSessions().filter { it.type == SessionType.PRACTICE }
+
+    fun leagueSessions(): List<ScoreSession> =
+        memberSessions().filter { it.type == SessionType.LEAGUE }
+
+    fun latestScore(): Score? = memberSessions().maxByOrNull { it.date }?.toScore()
     fun averageScore(): Int {
-        val list = memberScores()
+        val list = memberSessions()
         if (list.isEmpty()) return 0
-        return list.map { it.scoreValue }.average().toInt()
+        return list.map { it.totalScore }.average().toInt()
     }
 
-    fun highestScore(): Int = memberScores().maxOfOrNull { it.scoreValue } ?: 0
-    fun lowestScore(): Int = memberScores().minOfOrNull { it.scoreValue } ?: 0
+    fun highestScore(): Int = memberSessions().maxOfOrNull { it.totalScore } ?: 0
+    fun lowestScore(): Int = memberSessions().minOfOrNull { it.totalScore } ?: 0
+
+    fun findSession(id: String?): ScoreSession? =
+        scoreSessions.find { it.sessionId == id } ?: memberSessions().firstOrNull()
+
+    fun addCompletedSession(session: ScoreSession) {
+        scoreSessions.add(0, session)
+        scores.add(0, session.toScore())
+    }
+
+    fun sessionImprovement(type: SessionType): Double {
+        val ordered = memberSessions().filter { it.type == type }.sortedBy { it.date }
+        if (ordered.size < 2) return 0.0
+        val first = ordered.first().totalScore.toDouble()
+        val latest = ordered.last().totalScore.toDouble()
+        if (first == 0.0) return 0.0
+        return ((latest - first) / first) * 100.0
+    }
 
     fun unreadCount(): Int = notifications.count { !it.isRead }
 
@@ -192,4 +445,42 @@ object HabibiaDummyData {
             else -> "Good evening"
         }
     }
+}
+
+private fun parseArrow(token: String): ArrowScore {
+    return if (token.equals("X", ignoreCase = true)) ArrowScore(10, true)
+    else ArrowScore(token.toInt(), false)
+}
+
+private fun buildSession(
+    id: String,
+    type: SessionType,
+    title: String,
+    distance: Int,
+    date: String,
+    notes: String,
+    arrowsPerEnd: Int,
+    ends: List<List<String>>,
+    ranking: Int? = null,
+    fieldSize: Int? = null,
+    leagueName: String? = null
+): ScoreSession {
+    val scoredEnds = ends.mapIndexed { index, tokens ->
+        ScoreEnd(index + 1, tokens.map(::parseArrow).toMutableList())
+    }.toMutableList()
+    return ScoreSession(
+        sessionId = id,
+        memberId = "M001",
+        type = type,
+        title = title,
+        distanceMeters = distance,
+        arrowsPerEnd = arrowsPerEnd,
+        numberOfEnds = ends.size,
+        date = date,
+        notes = notes,
+        ends = scoredEnds,
+        ranking = ranking,
+        fieldSize = fieldSize,
+        leagueName = leagueName
+    )
 }

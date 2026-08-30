@@ -72,6 +72,15 @@ fun TextView.setChipStyle(backgroundColor: Int, textColor: Int) {
 
 fun Fragment.color(resId: Int): Int = ContextCompat.getColor(requireContext(), resId)
 
+fun View.bindStat(label: String, value: String) {
+    findViewById<TextView>(R.id.statLabel).text = label
+    findViewById<TextView>(R.id.statValue).text = value
+}
+
+fun formatAverage(value: Double): String = String.format("%.2f", value)
+
+fun formatImprovement(value: Double): String = String.format("%+.1f%%", value)
+
 fun formatDisplayDate(iso: String): String {
     // Expects YYYY-MM-DD; falls back to original
     val parts = iso.split("-")

@@ -5,7 +5,6 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,7 +14,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
@@ -214,12 +212,12 @@ class MemberDashboardFragment : Fragment() {
 
     private fun renderMiniChart(container: LinearLayout) {
         container.removeAllViews()
-        val scores = HabibiaDummyData.memberScores().sortedBy { it.scoreDate }.takeLast(5)
+        val scores = HabibiaDummyData.memberSessions().sortedBy { it.date }.takeLast(5)
         if (scores.isEmpty()) return
-        val max = scores.maxOf { it.scoreValue }.coerceAtLeast(1)
+        val max = scores.maxOf { it.totalScore }.coerceAtLeast(1)
         scores.forEach { score ->
             val bar = View(requireContext())
-            val height = ((score.scoreValue.toFloat() / max) * 48f).toInt().coerceAtLeast(8)
+            val height = ((score.totalScore.toFloat() / max) * 48f).toInt().coerceAtLeast(8)
             val params = LinearLayout.LayoutParams(0, height, 1f)
             params.marginEnd = 6
             bar.layoutParams = params
@@ -462,176 +460,6 @@ class NotificationFragment : Fragment() {
     }
 }
 
-class ScoresFragment : Fragment() {
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_scores, container, false)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        consumePendingMessage()
-        view.findViewById<TextView>(R.id.latestScoreText).text =
-            HabibiaDummyData.latestScore()?.scoreValue?.toString() ?: "-"
-        view.findViewById<TextView>(R.id.averageScoreText).text = HabibiaDummyData.averageScore().toString()
-        view.findViewById<TextView>(R.id.highestScoreText).text = HabibiaDummyData.highestScore().toString()
-        view.findViewById<Button>(R.id.viewProgressButton).setOnClickListener { goTo(ProgressFragment()) }
-        view.findViewById<Button>(R.id.recordScoreButton).setOnClickListener { goTo(RecordScoreFragment()) }
-
-        val container = view.findViewById<LinearLayout>(R.id.scoreHistoryContainer)
-        container.removeAllViews()
-        val scores = HabibiaDummyData.memberScores()
-        if (scores.isEmpty()) {
-            container.bindEmptyState(getString(R.string.empty_scores_title), getString(R.string.empty_scores_body))
-            return
-        }
-        scores.forEach { score ->
-            val item = layoutInflater.inflate(R.layout.item_score_row, container, false)
-            item.findViewById<TextView>(R.id.scoreValue).text = score.scoreValue.toString()
-            item.findViewById<TextView>(R.id.scoreEvent).text = score.event
-            item.findViewById<TextView>(R.id.scoreDate).text = formatDisplayDate(score.scoreDate)
-            item.setOnClickListener {
-                HabibiaSession.selectedScoreId = score.scoreId
-                goTo(ScoreDetailsFragment())
-            }
-            container.addView(item)
-        }
-    }
-}
-
-class RecordScoreFragment : Fragment() {
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_record_score, container, false)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp(R.id.navScores) }
-        view.findViewById<TextInputEditText>(R.id.dateInput).setText("2026-09-12")
-        view.findViewById<Button>(R.id.saveScoreButton).setOnClickListener {
-            val scoreTil = view.findViewById<TextInputLayout>(R.id.scoreTil)
-            val eventTil = view.findViewById<TextInputLayout>(R.id.eventTil)
-            val scoreText = view.findViewById<TextInputEditText>(R.id.scoreInput).text?.toString().orEmpty()
-            val date = view.findViewById<TextInputEditText>(R.id.dateInput).text?.toString().orEmpty()
-            val event = view.findViewById<TextInputEditText>(R.id.eventInput).text?.toString().orEmpty()
-            val notes = view.findViewById<TextInputEditText>(R.id.notesInput).text?.toString().orEmpty()
-            scoreTil.error = null
-            eventTil.error = null
-            val value = scoreText.toIntOrNull()
-            if (value == null || value <= 0) {
-                scoreTil.error = "Enter a valid score"
-                return@setOnClickListener
-            }
-            if (event.isBlank()) {
-                eventTil.error = "Event is required"
-                return@setOnClickListener
-            }
-            HabibiaDummyData.scores.add(
-                0,
-                Score(
-                    scoreId = "S${System.currentTimeMillis()}",
-                    memberId = HabibiaDummyData.member.memberId,
-                    scoreValue = value,
-                    scoreDate = date.ifBlank { "2026-09-12" },
-                    event = event,
-                    notes = notes
-                )
-            )
-            HabibiaSession.pendingSnackbar = getString(R.string.score_saved)
-            HabibiaSession.selectedMemberTab = R.id.navScores
-            openMemberApp(R.id.navScores)
-        }
-    }
-}
-
-class ScoreDetailsFragment : Fragment() {
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_score_details, container, false)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val score = HabibiaDummyData.scores.find { it.scoreId == HabibiaSession.selectedScoreId }
-            ?: HabibiaDummyData.memberScores().firstOrNull() ?: return
-        view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp(R.id.navScores) }
-        view.findViewById<TextView>(R.id.scoreValue).text = score.scoreValue.toString()
-        view.findViewById<TextView>(R.id.scoreEvent).text = score.event
-        view.findViewById<TextView>(R.id.scoreDate).text = formatDisplayDate(score.scoreDate)
-        view.findViewById<TextView>(R.id.scoreNotes).text = score.notes.ifBlank { "No notes" }
-    }
-}
-
-class ProgressFragment : Fragment() {
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_progress, container, false)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp(R.id.navScores) }
-        val toggle = view.findViewById<MaterialButtonToggleGroup>(R.id.rangeToggle)
-        toggle.check(
-            when (HabibiaSession.progressRange) {
-                "WEEK" -> R.id.weekButton
-                "OVERALL" -> R.id.overallButton
-                else -> R.id.monthButton
-            }
-        )
-        toggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            HabibiaSession.progressRange = when (checkedId) {
-                R.id.weekButton -> "WEEK"
-                R.id.overallButton -> "OVERALL"
-                else -> "MONTH"
-            }
-            bind(view)
-        }
-        bind(view)
-    }
-
-    private fun bind(view: View) {
-        val scores = when (HabibiaSession.progressRange) {
-            "WEEK" -> HabibiaDummyData.memberScores().take(2)
-            "MONTH" -> HabibiaDummyData.memberScores().take(4)
-            else -> HabibiaDummyData.memberScores()
-        }
-        view.findViewById<TextView>(R.id.avgText).text =
-            if (scores.isEmpty()) "0" else scores.map { it.scoreValue }.average().toInt().toString()
-        view.findViewById<TextView>(R.id.highText).text = (scores.maxOfOrNull { it.scoreValue } ?: 0).toString()
-        view.findViewById<TextView>(R.id.lowText).text = (scores.minOfOrNull { it.scoreValue } ?: 0).toString()
-        view.findViewById<TextView>(R.id.totalText).text = scores.size.toString()
-        view.findViewById<TextView>(R.id.trendLabel).text =
-            "Range: ${HabibiaSession.progressRange} • Showing improvement over time"
-
-        val container = view.findViewById<LinearLayout>(R.id.progressChartContainer)
-        container.removeAllViews()
-        val ordered = scores.sortedBy { it.scoreDate }
-        if (ordered.isEmpty()) return
-        val max = ordered.maxOf { it.scoreValue }.coerceAtLeast(1)
-        ordered.forEach { score ->
-            val col = LinearLayout(requireContext()).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f).apply {
-                    marginEnd = 8
-                }
-            }
-            val label = TextView(requireContext()).apply {
-                text = score.scoreValue.toString()
-                textSize = 11f
-                setTextColor(Color.parseColor("#6B7580"))
-                gravity = Gravity.CENTER
-            }
-            val bar = View(requireContext())
-            val height = ((score.scoreValue.toFloat() / max) * 140f).toInt().coerceAtLeast(16)
-            bar.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height)
-            bar.background = GradientDrawable().apply {
-                cornerRadius = 10f
-                colors = intArrayOf(Color.parseColor("#9ABA55"), Color.parseColor("#528FD0"))
-                orientation = GradientDrawable.Orientation.BOTTOM_TOP
-            }
-            col.addView(label)
-            col.addView(bar)
-            container.addView(col)
-        }
-    }
-}
-
 class BeginnerResourcesFragment : Fragment() {
     private var category = "All"
     private var query = ""
@@ -773,7 +601,7 @@ class AdminDashboardFragment : Fragment() {
         view.findViewById<TextView>(R.id.totalMembersText).text = HabibiaDummyData.members.size.toString()
         view.findViewById<TextView>(R.id.upcomingEventsText).text = HabibiaDummyData.events.size.toString()
         view.findViewById<TextView>(R.id.upcomingCompetitionsText).text = HabibiaDummyData.competitions.size.toString()
-        view.findViewById<TextView>(R.id.scoresRecordedText).text = HabibiaDummyData.scores.size.toString()
+        view.findViewById<TextView>(R.id.scoresRecordedText).text = HabibiaDummyData.scoreSessions.size.toString()
         view.findViewById<Button>(R.id.manageMembersButton).setOnClickListener { goTo(ManageMembersFragment()) }
         view.findViewById<Button>(R.id.manageEventsButton).setOnClickListener { goTo(ManageEventsFragment()) }
         view.findViewById<Button>(R.id.manageCompetitionsButton).setOnClickListener { goTo(ManageCompetitionsFragment()) }
@@ -1172,7 +1000,7 @@ class AdminStatisticsFragment : Fragment() {
         view.findViewById<TextView>(R.id.membersStat).text = HabibiaDummyData.members.size.toString()
         view.findViewById<TextView>(R.id.eventsStat).text = HabibiaDummyData.events.size.toString()
         view.findViewById<TextView>(R.id.competitionsStat).text = HabibiaDummyData.competitions.size.toString()
-        view.findViewById<TextView>(R.id.scoresStat).text = HabibiaDummyData.scores.size.toString()
+        view.findViewById<TextView>(R.id.scoresStat).text = HabibiaDummyData.scoreSessions.size.toString()
         view.findViewById<TextView>(R.id.resourcesStat).text = HabibiaDummyData.resources.size.toString()
         view.findViewById<TextView>(R.id.announcementsStat).text = HabibiaDummyData.announcements.size.toString()
     }
