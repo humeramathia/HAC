@@ -1,0 +1,16 @@
+{
+  "R001": {
+    "title": "Archery Safety Basics",
+    "category": "Safety",
+    "description": "Learn the essential safety rules every beginner should know.",
+    "resourceLink": "https://example.com/safety",
+    "createdBy": "ADMIN_UID"
+  },
+  "R002": {
+    "title": "Scoring Explained",
+    "category": "Scoring",
+    "description": "Learn target scoring and round structure.",
+    "resourceLink": "https://example.com/scoring",
+    "createdBy": "ADMIN_UID"
+  }
+}

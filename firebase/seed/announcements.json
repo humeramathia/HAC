@@ -1,0 +1,14 @@
+{
+  "A001": {
+    "title": "New Indoor League",
+    "content": "The indoor league begins this Saturday.",
+    "datePosted": "2026-09-02",
+    "createdBy": "ADMIN_UID"
+  },
+  "A002": {
+    "title": "Equipment Safety Check",
+    "content": "Please inspect bowstrings before training.",
+    "datePosted": "2026-09-04",
+    "createdBy": "ADMIN_UID"
+  }
+}

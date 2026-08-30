@@ -1,0 +1,20 @@
+{
+  "C001": {
+    "competitionName": "Western Cape Indoor Championships",
+    "competitionDate": "2026-09-15",
+    "registrationDeadline": "2026-09-05",
+    "venue": "Cape Town",
+    "description": "Indoor competition for club members.",
+    "status": "REGISTRATION OPEN",
+    "createdBy": "ADMIN_UID"
+  },
+  "C002": {
+    "competitionName": "Habibia Open Tournament",
+    "competitionDate": "2026-10-03",
+    "registrationDeadline": "2026-09-20",
+    "venue": "Habibia Archery Club",
+    "description": "Club-level competition and scoring day.",
+    "status": "UPCOMING",
+    "createdBy": "ADMIN_UID"
+  }
+}

@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function memberDoc() {
+      return get(/databases/$(database)/documents/members/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return signedIn() && memberDoc().role == "Admin";
+    }
+
+    function isOwner(memberId) {
+      return signedIn() && request.auth.uid == memberId;
+    }
+
+    match /members/{userId} {
+      allow read: if signedIn() && (isOwner(userId) || isAdmin());
+      allow create: if signedIn() && isOwner(userId);
+      allow update, delete: if isOwner(userId) || isAdmin();
+    }
+
+    match /memberProfiles/{userId} {
+      allow read: if signedIn() && (isOwner(userId) || isAdmin());
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    match /events/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /competitions/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /announcements/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /resources/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /scoreSessions/{id} {
+      allow read: if signedIn() && (isOwner(resource.data.memberId) || isAdmin());
+      allow create: if signedIn() && isOwner(request.resource.data.memberId);
+      allow update, delete: if isOwner(resource.data.memberId) || isAdmin();
+    }
+
+    match /notifications/{id} {
+      allow read, update: if signedIn() && (isOwner(resource.data.memberId) || isAdmin());
+      allow create, delete: if isAdmin();
+    }
+  }
+}

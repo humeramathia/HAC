@@ -1,0 +1,29 @@
+{
+  "E001": {
+    "title": "Saturday Practice",
+    "description": "Weekly training and scoring session.",
+    "eventDate": "2026-09-12",
+    "eventTime": "09:00",
+    "location": "Habibia Archery Club",
+    "type": "Practice",
+    "createdBy": "ADMIN_UID"
+  },
+  "E002": {
+    "title": "Club Indoor League",
+    "description": "Indoor league night for members.",
+    "eventDate": "2026-09-18",
+    "eventTime": "18:30",
+    "location": "Habibia Archery Club",
+    "type": "Event",
+    "createdBy": "ADMIN_UID"
+  },
+  "E003": {
+    "title": "Junior Development Day",
+    "description": "Introductory coaching session.",
+    "eventDate": "2026-09-25",
+    "eventTime": "10:00",
+    "location": "Habibia Archery Club",
+    "type": "Event",
+    "createdBy": "ADMIN_UID"
+  }
+}

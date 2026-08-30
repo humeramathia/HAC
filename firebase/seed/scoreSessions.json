@@ -1,0 +1,126 @@
+{
+  "PS001": {
+    "memberId": "MEMBER_UID",
+    "type": "PRACTICE",
+    "title": "Saturday Practice",
+    "distanceMeters": 18,
+    "arrowsPerEnd": 6,
+    "numberOfEnds": 10,
+    "date": "2026-09-12",
+    "notes": "Strong grouping after the warm-up ends.",
+    "totalScore": 524,
+    "maxScore": 600,
+    "averageArrow": 8.73,
+    "tensCount": 12,
+    "xCount": 3,
+    "highestEnd": 55,
+    "lowestEnd": 49,
+    "ranking": null,
+    "fieldSize": null,
+    "leagueName": null,
+    "ends": [
+      { "endNumber": 1, "total": 52, "arrows": [
+        { "value": 9, "isX": false }, { "value": 8, "isX": false }, { "value": 10, "isX": false },
+        { "value": 9, "isX": false }, { "value": 7, "isX": false }, { "value": 9, "isX": false }
+      ]},
+      { "endNumber": 2, "total": 54, "arrows": [
+        { "value": 10, "isX": false }, { "value": 9, "isX": false }, { "value": 8, "isX": false },
+        { "value": 9, "isX": false }, { "value": 10, "isX": true }, { "value": 8, "isX": false }
+      ]},
+      { "endNumber": 3, "total": 50, "arrows": [
+        { "value": 8, "isX": false }, { "value": 7, "isX": false }, { "value": 9, "isX": false },
+        { "value": 8, "isX": false }, { "value": 10, "isX": false }, { "value": 8, "isX": false }
+      ]},
+      { "endNumber": 4, "total": 53, "arrows": [
+        { "value": 10, "isX": false }, { "value": 9, "isX": false }, { "value": 9, "isX": false },
+        { "value": 8, "isX": false }, { "value": 8, "isX": false }, { "value": 9, "isX": false }
+      ]},
+      { "endNumber": 5, "total": 51, "arrows": [
+        { "value": 8, "isX": false }, { "value": 9, "isX": false }, { "value": 7, "isX": false },
+        { "value": 10, "isX": false }, { "value": 8, "isX": false }, { "value": 9, "isX": false }
+      ]},
+      { "endNumber": 6, "total": 55, "arrows": [
+        { "value": 10, "isX": false }, { "value": 10, "isX": true }, { "value": 9, "isX": false },
+        { "value": 9, "isX": false }, { "value": 8, "isX": false }, { "value": 9, "isX": false }
+      ]},
+      { "endNumber": 7, "total": 49, "arrows": [
+        { "value": 7, "isX": false }, { "value": 8, "isX": false }, { "value": 10, "isX": false },
+        { "value": 8, "isX": false }, { "value": 8, "isX": false }, { "value": 8, "isX": false }
+      ]},
+      { "endNumber": 8, "total": 52, "arrows": [
+        { "value": 9, "isX": false }, { "value": 8, "isX": false }, { "value": 10, "isX": false },
+        { "value": 8, "isX": false }, { "value": 9, "isX": false }, { "value": 8, "isX": false }
+      ]},
+      { "endNumber": 9, "total": 54, "arrows": [
+        { "value": 10, "isX": true }, { "value": 9, "isX": false }, { "value": 9, "isX": false },
+        { "value": 9, "isX": false }, { "value": 8, "isX": false }, { "value": 9, "isX": false }
+      ]},
+      { "endNumber": 10, "total": 54, "arrows": [
+        { "value": 9, "isX": false }, { "value": 10, "isX": false }, { "value": 8, "isX": false },
+        { "value": 9, "isX": false }, { "value": 9, "isX": false }, { "value": 9, "isX": false }
+      ]}
+    ]
+  },
+  "LS001": {
+    "memberId": "MEMBER_UID",
+    "type": "LEAGUE",
+    "title": "September League",
+    "distanceMeters": 18,
+    "arrowsPerEnd": 6,
+    "numberOfEnds": 10,
+    "date": "2026-09-18",
+    "notes": "Solid qualification-style indoor round.",
+    "totalScore": 542,
+    "maxScore": 600,
+    "averageArrow": 9.03,
+    "tensCount": 18,
+    "xCount": 3,
+    "highestEnd": 56,
+    "lowestEnd": 52,
+    "ranking": 2,
+    "fieldSize": 12,
+    "leagueName": "September League",
+    "ends": [
+      { "endNumber": 1, "total": 56, "arrows": [
+        { "value": 10, "isX": false }, { "value": 10, "isX": true }, { "value": 9, "isX": false },
+        { "value": 9, "isX": false }, { "value": 9, "isX": false }, { "value": 9, "isX": false }
+      ]},
+      { "endNumber": 2, "total": 55, "arrows": [
+        { "value": 10, "isX": false }, { "value": 10, "isX": false }, { "value": 9, "isX": false },
+        { "value": 9, "isX": false }, { "value": 8, "isX": false }, { "value": 9, "isX": false }
+      ]},
+      { "endNumber": 3, "total": 54, "arrows": [
+        { "value": 9, "isX": false }, { "value": 10, "isX": false }, { "value": 9, "isX": false },
+        { "value": 9, "isX": false }, { "value": 8, "isX": false }, { "value": 9, "isX": false }
+      ]},
+      { "endNumber": 4, "total": 53, "arrows": [
+        { "value": 10, "isX": false }, { "value": 9, "isX": false }, { "value": 8, "isX": false },
+        { "value": 9, "isX": false }, { "value": 9, "isX": false }, { "value": 8, "isX": false }
+      ]},
+      { "endNumber": 5, "total": 55, "arrows": [
+        { "value": 10, "isX": false }, { "value": 10, "isX": true }, { "value": 9, "isX": false },
+        { "value": 9, "isX": false }, { "value": 9, "isX": false }, { "value": 8, "isX": false }
+      ]},
+      { "endNumber": 6, "total": 54, "arrows": [
+        { "value": 9, "isX": false }, { "value": 10, "isX": false }, { "value": 9, "isX": false },
+        { "value": 9, "isX": false }, { "value": 8, "isX": false }, { "value": 9, "isX": false }
+      ]},
+      { "endNumber": 7, "total": 52, "arrows": [
+        { "value": 8, "isX": false }, { "value": 9, "isX": false }, { "value": 10, "isX": false },
+        { "value": 8, "isX": false }, { "value": 9, "isX": false }, { "value": 8, "isX": false }
+      ]},
+      { "endNumber": 8, "total": 56, "arrows": [
+        { "value": 10, "isX": false }, { "value": 10, "isX": true }, { "value": 10, "isX": false },
+        { "value": 9, "isX": false }, { "value": 8, "isX": false }, { "value": 9, "isX": false }
+      ]},
+      { "endNumber": 9, "total": 53, "arrows": [
+        { "value": 9, "isX": false }, { "value": 9, "isX": false }, { "value": 10, "isX": false },
+        { "value": 8, "isX": false }, { "value": 8, "isX": false }, { "value": 9, "isX": false }
+      ]},
+      { "endNumber": 10, "total": 54, "arrows": [
+        { "value": 10, "isX": false }, { "value": 9, "isX": false }, { "value": 9, "isX": false },
+        { "value": 9, "isX": false }, { "value": 8, "isX": false }, { "value": 9, "isX": false }
+      ]}
+    ]
+  }
+}

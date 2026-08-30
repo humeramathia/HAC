@@ -1,0 +1,18 @@
+{
+  "MEMBER_UID": {
+    "firstName": "Aaliyah",
+    "lastName": "Smit",
+    "email": "member@habibia.co.za",
+    "role": "Member",
+    "emailVerified": true,
+    "dateJoined": "2024-01-10"
+  },
+  "ADMIN_UID": {
+    "firstName": "Admin",
+    "lastName": "Habibia",
+    "email": "admin@habibia.co.za",
+    "role": "Admin",
+    "emailVerified": true,
+    "dateJoined": "2023-01-10"
+  }
+}

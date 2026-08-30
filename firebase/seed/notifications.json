@@ -1,0 +1,16 @@
+{
+  "N001": {
+    "memberId": "MEMBER_UID",
+    "title": "New Competition Added",
+    "message": "Western Cape Indoor Championships is open for registration.",
+    "dateSent": "2026-09-01 08:00",
+    "isRead": false
+  },
+  "N002": {
+    "memberId": "MEMBER_UID",
+    "title": "Score Recorded",
+    "message": "Your latest score has been recorded.",
+    "dateSent": "2026-09-03 10:24",
+    "isRead": true
+  }
+}
