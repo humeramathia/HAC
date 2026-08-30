@@ -602,6 +602,7 @@ class AdminDashboardFragment : Fragment() {
         view.findViewById<TextView>(R.id.upcomingEventsText).text = HabibiaDummyData.events.size.toString()
         view.findViewById<TextView>(R.id.upcomingCompetitionsText).text = HabibiaDummyData.competitions.size.toString()
         view.findViewById<TextView>(R.id.scoresRecordedText).text = HabibiaDummyData.scoreSessions.size.toString()
+        view.findViewById<Button>(R.id.memberProgressButton).setOnClickListener { goTo(AdminMemberListFragment()) }
         view.findViewById<Button>(R.id.manageMembersButton).setOnClickListener { goTo(ManageMembersFragment()) }
         view.findViewById<Button>(R.id.manageEventsButton).setOnClickListener { goTo(ManageEventsFragment()) }
         view.findViewById<Button>(R.id.manageCompetitionsButton).setOnClickListener { goTo(ManageCompetitionsFragment()) }
@@ -610,6 +611,7 @@ class AdminDashboardFragment : Fragment() {
         view.findViewById<Button>(R.id.statisticsButton).setOnClickListener { goTo(AdminStatisticsFragment()) }
         view.findViewById<Button>(R.id.logoutAdminButton).setOnClickListener {
             HabibiaSession.isAdmin = false
+            HabibiaSession.selectedMemberId = null
             goTo(LoginFragment())
         }
     }
@@ -631,8 +633,14 @@ class ManageMembersFragment : Fragment() {
                 val item = layoutInflater.inflate(R.layout.item_manage_row, container, false)
                 item.findViewById<TextView>(R.id.titleText).text = member.fullName
                 item.findViewById<TextView>(R.id.subtitleText).text = "${member.role} • ${member.email}"
+                item.findViewById<Button>(R.id.editButton).text = "Progress"
                 item.findViewById<Button>(R.id.editButton).setOnClickListener {
-                    showMessage("Editing ${member.fullName}")
+                    if (member.role == "Admin") {
+                        showMessage("Admin accounts have no score history")
+                        return@setOnClickListener
+                    }
+                    HabibiaSession.selectedMemberId = member.memberId
+                    goTo(AdminMemberProgressFragment())
                 }
                 item.findViewById<Button>(R.id.deleteButton).setOnClickListener {
                     if (member.role == "Admin") {
@@ -1006,10 +1014,3 @@ class AdminStatisticsFragment : Fragment() {
     }
 }
 
-private fun simpleWatcher(onChanged: (String) -> Unit): TextWatcher = object : TextWatcher {
-    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-    override fun afterTextChanged(s: Editable?) {
-        onChanged(s?.toString().orEmpty())
-    }
-}

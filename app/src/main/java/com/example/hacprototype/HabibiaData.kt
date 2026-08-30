@@ -148,6 +148,7 @@ object HabibiaSession {
     var selectedCompetitionId: String? = null
     var selectedScoreId: String? = null
     var selectedSessionId: String? = null
+    var selectedMemberId: String? = null
     var selectedResourceId: String? = null
     var selectedAnnouncementId: String? = null
     var editingEventId: String? = null
@@ -364,6 +365,98 @@ object HabibiaDummyData {
             ranking = 4,
             fieldSize = 11,
             leagueName = "July League"
+        ),
+        buildSession(
+            id = "PS101",
+            type = SessionType.PRACTICE,
+            title = "Weeknight Practice",
+            distance = 18,
+            date = "2026-09-11",
+            notes = "Focused on follow-through.",
+            arrowsPerEnd = 6,
+            memberId = "M002",
+            ends = listOf(
+                listOf("8", "9", "8", "8", "9", "8"),
+                listOf("9", "8", "9", "8", "8", "8"),
+                listOf("8", "8", "10", "8", "8", "9"),
+                listOf("9", "8", "8", "9", "8", "8"),
+                listOf("8", "9", "8", "8", "9", "8"),
+                listOf("9", "8", "9", "8", "8", "9"),
+                listOf("8", "8", "8", "9", "8", "8"),
+                listOf("9", "9", "8", "8", "8", "8"),
+                listOf("8", "8", "9", "8", "9", "8"),
+                listOf("9", "8", "8", "8", "8", "9")
+            )
+        ),
+        buildSession(
+            id = "LS101",
+            type = SessionType.LEAGUE,
+            title = "September League",
+            distance = 18,
+            date = "2026-09-18",
+            notes = "Consistent middle ends.",
+            arrowsPerEnd = LeagueStandard.ARROWS_PER_END,
+            memberId = "M002",
+            ranking = 5,
+            fieldSize = 12,
+            leagueName = "September League",
+            ends = listOf(
+                listOf("9", "8", "9", "8", "9", "8"),
+                listOf("8", "9", "10", "8", "8", "8"),
+                listOf("9", "8", "8", "9", "8", "9"),
+                listOf("8", "8", "9", "8", "9", "8"),
+                listOf("9", "9", "8", "8", "8", "8"),
+                listOf("8", "9", "8", "9", "8", "8"),
+                listOf("9", "8", "8", "8", "9", "8"),
+                listOf("8", "9", "9", "8", "8", "8"),
+                listOf("9", "8", "8", "9", "8", "8"),
+                listOf("8", "8", "9", "8", "9", "8")
+            )
+        ),
+        buildSession(
+            id = "PS201",
+            type = SessionType.PRACTICE,
+            title = "Beginner Practice",
+            distance = 15,
+            date = "2026-09-09",
+            notes = "Building confidence at 15 m.",
+            arrowsPerEnd = 6,
+            memberId = "M003",
+            ends = listOf(
+                listOf("7", "8", "8", "7", "8", "7"),
+                listOf("8", "7", "8", "8", "7", "8"),
+                listOf("7", "8", "7", "8", "8", "7"),
+                listOf("8", "8", "7", "8", "7", "8"),
+                listOf("8", "7", "8", "7", "8", "8"),
+                listOf("7", "8", "8", "8", "7", "7"),
+                listOf("8", "8", "7", "8", "8", "7"),
+                listOf("7", "8", "8", "7", "8", "8")
+            )
+        ),
+        buildSession(
+            id = "LS201",
+            type = SessionType.LEAGUE,
+            title = "September League",
+            distance = 18,
+            date = "2026-09-18",
+            notes = "First full league round.",
+            arrowsPerEnd = LeagueStandard.ARROWS_PER_END,
+            memberId = "M003",
+            ranking = 8,
+            fieldSize = 12,
+            leagueName = "September League",
+            ends = listOf(
+                listOf("7", "8", "8", "8", "7", "8"),
+                listOf("8", "8", "7", "8", "8", "7"),
+                listOf("8", "7", "8", "8", "8", "8"),
+                listOf("7", "8", "8", "7", "8", "8"),
+                listOf("8", "8", "8", "7", "8", "7"),
+                listOf("8", "7", "8", "8", "7", "8"),
+                listOf("7", "8", "8", "8", "8", "7"),
+                listOf("8", "8", "7", "8", "8", "8"),
+                listOf("8", "7", "8", "8", "7", "8"),
+                listOf("7", "8", "8", "8", "8", "7")
+            )
         )
     )
 
@@ -395,18 +488,31 @@ object HabibiaDummyData {
     fun nextEvent(): ClubEvent? = events.minByOrNull { it.eventDate }
     fun nextCompetition(): Competition? = competitions.minByOrNull { it.competitionDate }
 
+    fun viewingMemberId(): String =
+        if (HabibiaSession.isAdmin) {
+            HabibiaSession.selectedMemberId ?: member.memberId
+        } else {
+            member.memberId
+        }
+
+    fun findMember(id: String?): Member? =
+        members.find { it.memberId == id } ?: member
+
+    fun clubMembers(): List<Member> = members.filter { it.role != "Admin" }
+
     fun memberScores(): List<Score> = scores.filter { it.memberId == member.memberId }
         .sortedByDescending { it.scoreDate }
 
-    fun memberSessions(): List<ScoreSession> = scoreSessions
-        .filter { it.memberId == member.memberId }
-        .sortedByDescending { it.date }
+    fun sessionsFor(memberId: String = viewingMemberId()): List<ScoreSession> =
+        scoreSessions.filter { it.memberId == memberId }.sortedByDescending { it.date }
 
-    fun practiceSessions(): List<ScoreSession> =
-        memberSessions().filter { it.type == SessionType.PRACTICE }
+    fun memberSessions(): List<ScoreSession> = sessionsFor(viewingMemberId())
 
-    fun leagueSessions(): List<ScoreSession> =
-        memberSessions().filter { it.type == SessionType.LEAGUE }
+    fun practiceSessions(memberId: String = viewingMemberId()): List<ScoreSession> =
+        sessionsFor(memberId).filter { it.type == SessionType.PRACTICE }
+
+    fun leagueSessions(memberId: String = viewingMemberId()): List<ScoreSession> =
+        sessionsFor(memberId).filter { it.type == SessionType.LEAGUE }
 
     fun latestScore(): Score? = memberSessions().maxByOrNull { it.date }?.toScore()
     fun averageScore(): Int {
@@ -426,8 +532,8 @@ object HabibiaDummyData {
         scores.add(0, session.toScore())
     }
 
-    fun sessionImprovement(type: SessionType): Double {
-        val ordered = memberSessions().filter { it.type == type }.sortedBy { it.date }
+    fun sessionImprovement(type: SessionType, memberId: String = viewingMemberId()): Double {
+        val ordered = sessionsFor(memberId).filter { it.type == type }.sortedBy { it.date }
         if (ordered.size < 2) return 0.0
         val first = ordered.first().totalScore.toDouble()
         val latest = ordered.last().totalScore.toDouble()
@@ -463,14 +569,15 @@ private fun buildSession(
     ends: List<List<String>>,
     ranking: Int? = null,
     fieldSize: Int? = null,
-    leagueName: String? = null
+    leagueName: String? = null,
+    memberId: String = "M001"
 ): ScoreSession {
     val scoredEnds = ends.mapIndexed { index, tokens ->
         ScoreEnd(index + 1, tokens.map(::parseArrow).toMutableList())
     }.toMutableList()
     return ScoreSession(
         sessionId = id,
-        memberId = "M001",
+        memberId = memberId,
         type = type,
         title = title,
         distanceMeters = distance,

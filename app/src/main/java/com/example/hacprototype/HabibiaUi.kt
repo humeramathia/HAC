@@ -3,6 +3,8 @@ package com.example.hacprototype
 import android.app.AlertDialog
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,6 +21,7 @@ fun Fragment.goTo(fragment: Fragment) {
 fun Fragment.openMemberApp(tabId: Int = R.id.navHome) {
     HabibiaSession.selectedMemberTab = tabId
     HabibiaSession.isAdmin = false
+    HabibiaSession.selectedMemberId = null
     goTo(MemberHostFragment())
 }
 
@@ -71,6 +74,14 @@ fun TextView.setChipStyle(backgroundColor: Int, textColor: Int) {
 }
 
 fun Fragment.color(resId: Int): Int = ContextCompat.getColor(requireContext(), resId)
+
+fun simpleWatcher(onChanged: (String) -> Unit): TextWatcher = object : TextWatcher {
+    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+    override fun afterTextChanged(s: Editable?) {
+        onChanged(s?.toString().orEmpty())
+    }
+}
 
 fun View.bindStat(label: String, value: String) {
     findViewById<TextView>(R.id.statLabel).text = label

@@ -465,7 +465,13 @@ class ScoreDetailsFragment : Fragment() {
             ?: HabibiaDummyData.findSession(HabibiaSession.selectedScoreId)
             ?: return
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener {
-            if (session.type == SessionType.PRACTICE) goTo(PracticeScoresFragment()) else goTo(LeagueScoresFragment())
+            if (HabibiaSession.isAdmin) {
+                goTo(AdminMemberProgressFragment())
+            } else if (session.type == SessionType.PRACTICE) {
+                goTo(PracticeScoresFragment())
+            } else {
+                goTo(LeagueScoresFragment())
+            }
         }
         val chip = view.findViewById<TextView>(R.id.detailTypeChip)
         chip.text = session.typeLabel
@@ -474,8 +480,14 @@ class ScoreDetailsFragment : Fragment() {
             if (session.type == SessionType.PRACTICE) Color.parseColor("#7A9A3E") else Color.parseColor("#3E78B8")
         )
         view.findViewById<TextView>(R.id.detailTitle).text = session.title
-        view.findViewById<TextView>(R.id.detailMeta).text =
-            "${formatDisplayDate(session.date)} • ${session.distanceLabel} • ${session.typeLabel}"
+        val memberName = HabibiaDummyData.findMember(session.memberId)?.fullName
+        view.findViewById<TextView>(R.id.detailMeta).text = buildString {
+            if (HabibiaSession.isAdmin && !memberName.isNullOrBlank()) {
+                append(memberName)
+                append(" • ")
+            }
+            append("${formatDisplayDate(session.date)} • ${session.distanceLabel} • ${session.typeLabel}")
+        }
         view.findViewById<TextView>(R.id.detailScore).text = session.scoreLabel
         view.findViewById<View>(R.id.detailAverage).bindStat("Average arrow", formatAverage(session.averageArrow))
         view.findViewById<View>(R.id.detailArrows).bindStat("Total arrows", session.totalArrows.toString())
@@ -503,14 +515,20 @@ class ProgressFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val type = HabibiaSession.progressType
+        val memberId = HabibiaDummyData.viewingMemberId()
+        val viewedMember = HabibiaDummyData.findMember(memberId)
         val sessions = if (type == SessionType.PRACTICE) {
-            HabibiaDummyData.practiceSessions()
+            HabibiaDummyData.practiceSessions(memberId)
         } else {
-            HabibiaDummyData.leagueSessions()
+            HabibiaDummyData.leagueSessions(memberId)
         }.sortedBy { it.date }
         val isPractice = type == SessionType.PRACTICE
-        view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp(R.id.navScores) }
-        view.findViewById<TextView>(R.id.progressTitle).text = if (isPractice) "Practice Progress" else "League Progress"
+        view.findViewById<ImageButton>(R.id.backButton).setOnClickListener {
+            if (HabibiaSession.isAdmin) goTo(AdminMemberProgressFragment()) else openMemberApp(R.id.navScores)
+        }
+        val graphTitle = if (isPractice) "Practice Progress" else "League Progress"
+        view.findViewById<TextView>(R.id.progressTitle).text =
+            if (HabibiaSession.isAdmin) "${viewedMember?.firstName} • $graphTitle" else graphTitle
         view.findViewById<TextView>(R.id.chartHeading).text = if (isPractice) "Practice Progress" else "League Performance"
 
         val average = if (sessions.isEmpty()) 0.0 else sessions.map { it.averageArrow }.average()
@@ -530,7 +548,7 @@ class ProgressFragment : Fragment() {
         )
         view.findViewById<View>(R.id.statImprovement).bindStat(
             "Improvement",
-            formatImprovement(HabibiaDummyData.sessionImprovement(type))
+            formatImprovement(HabibiaDummyData.sessionImprovement(type, memberId))
         )
         view.findViewById<TextView>(R.id.trendLabel).text =
             if (isPractice) "Practice scores over recent sessions" else "League scores by month"
@@ -572,6 +590,89 @@ class ProgressFragment : Fragment() {
             col.addView(label)
             container.addView(col)
         }
+    }
+}
+
+class AdminMemberListFragment : Fragment() {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        return inflater.inflate(R.layout.fragment_admin_member_list, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { goTo(AdminDashboardFragment()) }
+        val container = view.findViewById<LinearLayout>(R.id.membersListContainer)
+        fun render(query: String) {
+            container.removeAllViews()
+            val members = HabibiaDummyData.clubMembers().filter {
+                query.isBlank() || it.fullName.contains(query, true) || it.email.contains(query, true)
+            }
+            if (members.isEmpty()) {
+                container.bindEmptyState("No members found", "Try a different search term.")
+                return
+            }
+            members.forEach { member ->
+                val sessions = HabibiaDummyData.sessionsFor(member.memberId)
+                val latest = sessions.maxByOrNull { it.date }
+                val item = layoutInflater.inflate(R.layout.item_session_card, container, false)
+                item.findViewById<TextView>(R.id.sessionTitle).text = member.fullName
+                item.findViewById<TextView>(R.id.sessionDate).text = member.email
+                item.findViewById<TextView>(R.id.sessionScore).text = latest?.scoreLabel ?: "–"
+                item.findViewById<TextView>(R.id.sessionAverage).text =
+                    if (sessions.isEmpty()) "0.00"
+                    else formatAverage(sessions.map { it.averageArrow }.average())
+                item.findViewById<TextView>(R.id.sessionRank).visibility = View.GONE
+                val practiceCount = sessions.count { it.type == SessionType.PRACTICE }
+                val leagueCount = sessions.count { it.type == SessionType.LEAGUE }
+                item.findViewById<TextView>(R.id.sessionMeta).text =
+                    if (latest == null) "No sessions recorded yet"
+                    else "$practiceCount practice • $leagueCount league • latest ${formatDisplayDate(latest.date)}"
+                item.findViewById<Button>(R.id.viewDetailsButton).text = "View Progress"
+                val open = {
+                    HabibiaSession.selectedMemberId = member.memberId
+                    goTo(AdminMemberProgressFragment())
+                }
+                item.setOnClickListener { open() }
+                item.findViewById<Button>(R.id.viewDetailsButton).setOnClickListener { open() }
+                container.addView(item)
+            }
+        }
+        view.findViewById<TextInputEditText>(R.id.searchMembersInput).addTextChangedListener(simpleWatcher { render(it) })
+        render("")
+    }
+}
+
+class AdminMemberProgressFragment : Fragment() {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        return inflater.inflate(R.layout.fragment_admin_member_progress, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        val member = HabibiaDummyData.findMember(HabibiaSession.selectedMemberId) ?: return
+        HabibiaSession.selectedMemberId = member.memberId
+        view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { goTo(AdminMemberListFragment()) }
+        view.findViewById<TextView>(R.id.memberNameText).text = member.fullName
+        view.findViewById<TextView>(R.id.memberMetaText).text = "${member.email} • ${member.role}"
+
+        val sessions = HabibiaDummyData.sessionsFor(member.memberId)
+        val practice = HabibiaDummyData.practiceSessions(member.memberId)
+        val league = HabibiaDummyData.leagueSessions(member.memberId)
+        val latest = sessions.maxByOrNull { it.date }
+        val average = if (sessions.isEmpty()) 0.0 else sessions.map { it.averageArrow }.average()
+        view.findViewById<View>(R.id.statLatest).bindStat("Latest", latest?.totalScore?.toString() ?: "–")
+        view.findViewById<View>(R.id.statAverage).bindStat("Average", formatAverage(average))
+        view.findViewById<View>(R.id.statPractice).bindStat("Practice", practice.size.toString())
+        view.findViewById<View>(R.id.statLeague).bindStat("League", league.size.toString())
+
+        view.findViewById<Button>(R.id.practiceGraphButton).setOnClickListener {
+            HabibiaSession.progressType = SessionType.PRACTICE
+            goTo(ProgressFragment())
+        }
+        view.findViewById<Button>(R.id.leagueGraphButton).setOnClickListener {
+            HabibiaSession.progressType = SessionType.LEAGUE
+            goTo(ProgressFragment())
+        }
+        bindHistory(view.findViewById(R.id.practiceContainer), practice, false)
+        bindHistory(view.findViewById(R.id.leagueContainer), league, true)
     }
 }
 
