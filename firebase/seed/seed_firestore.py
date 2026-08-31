@@ -11,7 +11,10 @@ from firebase_admin import credentials, firestore
 SEED_DIR = Path(__file__).resolve().parent
 FIREBASE_DIR = SEED_DIR.parent
 UIDS_PATH = SEED_DIR / "uids.local.json"
-SERVICE_ACCOUNT_PATH = FIREBASE_DIR / "serviceAccount.json"
+SERVICE_ACCOUNT_CANDIDATES = [
+    FIREBASE_DIR / "serviceAccount.json",
+    FIREBASE_DIR / "serviceAccount.json.json",
+]
 
 COLLECTIONS = [
     "members",
@@ -69,15 +72,20 @@ def load_collection(name: str, member_uid: str, admin_uid: str) -> dict:
     return documents
 
 
-def main() -> None:
-    if not SERVICE_ACCOUNT_PATH.exists():
-        raise SystemExit(
-            "Missing firebase/serviceAccount.json\n"
-            "Firebase Console → Project settings → Service accounts → Generate new private key"
-        )
+def find_service_account() -> Path:
+    for path in SERVICE_ACCOUNT_CANDIDATES:
+        if path.exists():
+            return path
+    raise SystemExit(
+        "Missing firebase/serviceAccount.json\n"
+        "Firebase Console → Project settings → Service accounts → Generate new private key"
+    )
 
+
+def main() -> None:
+    service_account_path = find_service_account()
     member_uid, admin_uid = load_uids()
-    cred = credentials.Certificate(str(SERVICE_ACCOUNT_PATH))
+    cred = credentials.Certificate(str(service_account_path))
     firebase_admin.initialize_app(cred)
     db = firestore.client()
 
@@ -87,7 +95,7 @@ def main() -> None:
             db.collection(name).document(doc_id).set(fields)
             print(f"wrote {name}/{doc_id}")
 
-    print("Done. Refresh Firestore → Data.")
+    print("Done. Refresh Firestore -> Data.")
 
 
 if __name__ == "__main__":

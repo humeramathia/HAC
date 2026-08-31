@@ -15,5 +15,7 @@
 local.properties
 google-services.json
 serviceAccount.json
+serviceAccount.json.json
 firebase/serviceAccount.json
+firebase/serviceAccount.json.json
 firebase/seed/uids.local.json
