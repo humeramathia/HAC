@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Habibia API tester</title>
+  <style>
+    :root {
+      --green: #1b3a2f;
+      --bg: #f4f1ea;
+      --card: #fff;
+      --line: #d9d4c8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, sans-serif;
+      background: var(--bg);
+      color: #1a1a1a;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+    h1 { font-size: 1.4rem; margin: 0 0 8px; color: var(--green); }
+    p.lead { margin: 0 0 20px; color: #555; }
+    section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    label { display: block; font-size: 0.85rem; margin: 10px 0 4px; }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font: inherit;
+    }
+    textarea { min-height: 90px; font-family: Consolas, monospace; font-size: 12px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    button {
+      background: var(--green);
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button.secondary { background: #4a6741; }
+    pre {
+      background: #111;
+      color: #d6ffd6;
+      padding: 12px;
+      border-radius: 8px;
+      overflow: auto;
+      min-height: 140px;
+      font-size: 12px;
+    }
+    .status { font-size: 0.9rem; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Habibia API tester</h1>
+    <p class="lead">Log in here. The token stays in this page and is sent as a header, not in the URL.</p>
+
+    <section>
+      <strong>1. Log in</strong>
+      <label>Email</label>
+      <input id="email" value="member@habibia.co.za" />
+      <label>Password</label>
+      <input id="password" type="password" value="Member123" />
+      <div class="row">
+        <button type="button" id="loginMember">Log in as member</button>
+        <button type="button" class="secondary" id="loginAdmin">Log in as admin</button>
+      </div>
+    </section>
+
+    <section>
+      <strong>2. Token</strong>
+      <p class="lead">Filled automatically after login. You can also paste a token here.</p>
+      <textarea id="token" placeholder="Token appears here after login"></textarea>
+    </section>
+
+    <section>
+      <strong>3. Try a request</strong>
+      <div class="row">
+        <button type="button" data-call="GET /me">GET /me</button>
+        <button type="button" data-call="GET /me/profile">GET /me/profile</button>
+        <button type="button" data-call="GET /events">GET /events</button>
+        <button type="button" data-call="GET /competitions">GET /competitions</button>
+        <button type="button" data-call="GET /score-sessions?type=PRACTICE">GET practice scores</button>
+        <button type="button" data-call="GET /announcements">GET /announcements</button>
+        <button type="button" data-call="GET /admin/members">GET /admin/members</button>
+      </div>
+      <p class="status" id="status">No request yet</p>
+      <pre id="out">{}</pre>
+    </section>
+  </main>
+  <script>
+    const email = document.getElementById("email");
+    const password = document.getElementById("password");
+    const tokenBox = document.getElementById("token");
+    const statusEl = document.getElementById("status");
+    const out = document.getElementById("out");
+
+    async function login(asAdmin) {
+      if (asAdmin) email.value = "admin@habibia.co.za";
+      const response = await fetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.value, password: password.value }),
+      });
+      const data = await response.json();
+      out.textContent = JSON.stringify(data, null, 2);
+      statusEl.textContent = "Login " + response.status;
+      if (data.token) tokenBox.value = data.token;
+    }
+
+    async function callApi(spec) {
+      const [method, path] = spec.split(" ");
+      const headers = { "Content-Type": "application/json" };
+      if (tokenBox.value.trim()) headers.Authorization = "Bearer " + tokenBox.value.trim();
+      const response = await fetch(path, { method, headers });
+      let data;
+      try { data = await response.json(); } catch { data = { error: "Not JSON" }; }
+      statusEl.textContent = spec + " → " + response.status;
+      out.textContent = JSON.stringify(data, null, 2);
+    }
+
+    document.getElementById("loginMember").onclick = () => login(false);
+    document.getElementById("loginAdmin").onclick = () => login(true);
+    document.querySelectorAll("[data-call]").forEach((btn) => {
+      btn.onclick = () => callApi(btn.dataset.call);
+    });
+  </script>
+</body>
+</html>

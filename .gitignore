@@ -19,3 +19,8 @@ serviceAccount.json.json
 firebase/serviceAccount.json
 firebase/serviceAccount.json.json
 firebase/seed/uids.local.json
+.env
+backend/.env
+__pycache__/
+backend/__pycache__/
+*.pyc
