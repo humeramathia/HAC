@@ -94,7 +94,6 @@ fun <T> Fragment.apiInBackground(
                 ?: Handler(Looper.getMainLooper()).post { onOk(result) }
         } catch (error: HabibiaApiException) {
             val message = when (error.statusCode) {
-                401 -> "Please log in again"
                 403 -> "You do not have permission to do that"
                 else -> error.message ?: "Request failed"
             }

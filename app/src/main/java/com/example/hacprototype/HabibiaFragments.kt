@@ -18,6 +18,7 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import org.json.JSONObject
 
 class SplashFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -70,11 +71,59 @@ class LoginFragment : Fragment() {
                 valid = false
             }
             if (!valid) return@setOnClickListener
-            if (email.contains("admin", ignoreCase = true)) openAdminApp() else openMemberApp()
+            signInThenOpen(email, password)
         }
         view.findViewById<View>(R.id.registerButton).setOnClickListener { goTo(RegisterFragment()) }
-        view.findViewById<View>(R.id.demoMemberButton).setOnClickListener { openMemberApp() }
+        view.findViewById<View>(R.id.demoMemberButton).setOnClickListener {
+            signInThenOpen("member@habibia.co.za", "Member123")
+        }
         view.findViewById<View>(R.id.demoAdminButton).setOnClickListener { openAdminApp() }
+    }
+
+    private fun signInThenOpen(email: String, password: String) {
+        val loginButton = view?.findViewById<View>(R.id.loginButton)
+        val passwordError = view?.findViewById<TextView>(R.id.passwordError)
+        loginButton?.isEnabled = false
+        passwordError?.visibility = View.GONE
+        apiInBackground(
+            work = {
+                HabibiaApi.post(
+                    "/auth/login",
+                    JSONObject().put("email", email).put("password", password).toString(),
+                    token = null
+                )
+            },
+            onError = { message ->
+                loginButton?.isEnabled = true
+                passwordError?.text = message
+                passwordError?.visibility = View.VISIBLE
+            },
+            onOk = { json ->
+                loginButton?.isEnabled = true
+                val body = JSONObject(json)
+                val memberJson = body.optJSONObject("member") ?: JSONObject()
+                val member = Member(
+                    memberId = memberJson.optString("memberId"),
+                    firstName = memberJson.optString("firstName"),
+                    lastName = memberJson.optString("lastName"),
+                    email = memberJson.optString("email"),
+                    role = memberJson.optString("role").ifBlank { body.optString("role") },
+                    emailVerified = memberJson.optBoolean("emailVerified"),
+                    dateJoined = memberJson.optString("dateJoined")
+                )
+                HabibiaSession.authToken = body.optString("token").ifBlank { null }
+                HabibiaSession.loggedInMemberId = member.memberId.ifBlank { null }
+                HabibiaDummyData.member = member
+                when (body.optString("role")) {
+                    "Admin" -> openAdminApp()
+                    "Member" -> openMemberApp()
+                    else -> {
+                        passwordError?.text = "Unknown role"
+                        passwordError?.visibility = View.VISIBLE
+                    }
+                }
+            }
+        )
     }
 }
 
