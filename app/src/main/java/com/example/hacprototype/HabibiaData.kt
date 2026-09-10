@@ -142,6 +142,8 @@ data class BeginnerResource(
 )
 
 object HabibiaSession {
+    var authToken: String? = null
+    var loggedInMemberId: String? = null
     var isAdmin: Boolean = false
     var selectedMemberTab: Int = R.id.navHome
     var selectedEventId: String? = null

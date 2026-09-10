@@ -19,6 +19,8 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import org.json.JSONArray
+import org.json.JSONObject
 
 class ScoresFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -27,19 +29,14 @@ class ScoresFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         consumePendingMessage()
-        view.findViewById<TextView>(R.id.latestScoreText).text =
-            HabibiaDummyData.latestScore()?.scoreValue?.toString() ?: "-"
-        view.findViewById<TextView>(R.id.averageScoreText).text = HabibiaDummyData.averageScore().toString()
-        view.findViewById<TextView>(R.id.highestScoreText).text = HabibiaDummyData.highestScore().toString()
-
-        val practiceCount = HabibiaDummyData.practiceSessions().size
-        val leagueCount = HabibiaDummyData.leagueSessions().size
-        view.findViewById<TextView>(R.id.practiceHistorySummary).text =
-            if (practiceCount == 0) "No practice sessions yet"
-            else "$practiceCount practice session${if (practiceCount == 1) "" else "s"} recorded"
-        view.findViewById<TextView>(R.id.leagueHistorySummary).text =
-            if (leagueCount == 0) "No league rounds yet"
-            else "$leagueCount league round${if (leagueCount == 1) "" else "s"} recorded"
+        bindHubStats(view, emptyList(), emptyList())
+        apiInBackground({
+            parseSessionList(HabibiaApi.get("/score-sessions?type=PRACTICE")) to
+                parseSessionList(HabibiaApi.get("/score-sessions?type=LEAGUE"))
+        }) { (practice, league) ->
+            if (!isAdded) return@apiInBackground
+            bindHubStats(view, practice, league)
+        }
 
         view.findViewById<MaterialCardView>(R.id.practiceChoiceCard).setOnClickListener {
             goTo(PracticeSetupFragment())
@@ -365,30 +362,49 @@ class ScoreEntryFragment : Fragment() {
 
     private fun saveRound(view: View, session: ScoreSession) {
         val error = view.findViewById<TextView>(R.id.scoreErrorText)
-        if (HabibiaSession.currentEndArrows.size != session.arrowsPerEnd) {
+        val stillEntering = session.completedEnds < session.numberOfEnds
+        if (stillEntering && HabibiaSession.currentEndArrows.size != session.arrowsPerEnd) {
             error.text = "Enter a score for every arrow in this end."
             error.visibility = View.VISIBLE
             return
         }
         error.visibility = View.GONE
-        session.ends.add(
-            ScoreEnd(session.completedEnds + 1, HabibiaSession.currentEndArrows.toMutableList())
-        )
-        HabibiaSession.currentEndArrows.clear()
+        if (stillEntering) {
+            session.ends.add(
+                ScoreEnd(session.completedEnds + 1, HabibiaSession.currentEndArrows.toMutableList())
+            )
+            HabibiaSession.currentEndArrows.clear()
+        }
         if (session.completedEnds >= session.numberOfEnds) {
             if (session.type == SessionType.LEAGUE && session.ranking == null) {
                 session.ranking = 3
                 session.fieldSize = 12
             }
-            HabibiaDummyData.addCompletedSession(session)
-            HabibiaSession.selectedSessionId = session.sessionId
-            HabibiaSession.draftSession = null
-            HabibiaSession.pendingSnackbar = getString(R.string.session_saved)
-            goTo(SessionCompleteFragment())
+            postCompletedSession(view, session)
         } else {
             render(view)
             showMessage("Round ${session.completedEnds} saved")
         }
+    }
+
+    private fun postCompletedSession(view: View, session: ScoreSession) {
+        val saveButton = view.findViewById<Button>(R.id.saveRoundButton)
+        saveButton.isEnabled = false
+        apiInBackground(
+            work = { HabibiaApi.post("/score-sessions", scoreSessionToPostJson(session)) },
+            onOk = { json ->
+                if (!isAdded) return@apiInBackground
+                val created = parseScoreSession(JSONObject(json))
+                HabibiaSession.selectedSessionId = created.sessionId
+                HabibiaSession.draftSession = null
+                HabibiaSession.pendingSnackbar = getString(R.string.session_saved)
+                goTo(SessionCompleteFragment())
+            },
+            onError = { message ->
+                saveButton.isEnabled = true
+                showMessage(message)
+            }
+        )
     }
 
     private val Int.dp: Int get() = (this * resources.displayMetrics.density).toInt()
@@ -400,31 +416,15 @@ class SessionCompleteFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val session = HabibiaDummyData.findSession(HabibiaSession.selectedSessionId) ?: return
-        val isPractice = session.type == SessionType.PRACTICE
-        view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp(R.id.navScores) }
-        view.findViewById<TextView>(R.id.completeHeader).text = if (isPractice) "Practice complete" else "League complete"
-        view.findViewById<TextView>(R.id.completeTitle).text =
-            if (isPractice) "Practice complete" else "League complete"
-        view.findViewById<TextView>(R.id.completeDistance).text = session.distanceLabel.uppercase()
-        view.findViewById<TextView>(R.id.completeScore).text = session.scoreLabel
-        view.findViewById<View>(R.id.statAverage).bindStat("Average", formatAverage(session.averageArrow))
-        view.findViewById<View>(R.id.statArrows).bindStat("Arrows", session.totalArrows.toString())
-        view.findViewById<View>(R.id.statTens).bindStat("10s", session.tensCount.toString())
-        view.findViewById<View>(R.id.statXs).bindStat("Xs", session.xCount.toString())
-        view.findViewById<View>(R.id.statBest).bindStat("Best round", session.highestEnd.toString())
-        view.findViewById<View>(R.id.statRounds).bindStat("Rounds", session.numberOfEnds.toString())
-
-        view.findViewById<Button>(R.id.viewDetailsButton).setOnClickListener { goTo(ScoreDetailsFragment()) }
-        view.findViewById<Button>(R.id.viewProgressButton).setOnClickListener {
-            HabibiaSession.progressType = session.type
-            goTo(ProgressFragment())
+        val sessionId = HabibiaSession.selectedSessionId
+        if (sessionId.isNullOrBlank()) {
+            showMessage("Session not found")
+            return
         }
-        view.findViewById<Button>(R.id.backToHistoryButton).apply {
-            text = if (isPractice) "Back to Practice Scores" else "View League Scores"
-            setOnClickListener {
-                if (isPractice) goTo(PracticeScoresFragment()) else goTo(LeagueScoresFragment())
-            }
+        view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp(R.id.navScores) }
+        apiInBackground({ HabibiaApi.get("/score-sessions/$sessionId") }) { json ->
+            if (!isAdded) return@apiInBackground
+            bindSessionComplete(view, parseScoreSession(JSONObject(json)))
         }
     }
 }
@@ -438,7 +438,18 @@ class PracticeScoresFragment : Fragment() {
         consumePendingMessage()
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp(R.id.navScores) }
         view.findViewById<TextView>(R.id.historyTitle).text = "Practice Scores"
-        bindHistory(view.findViewById(R.id.historyContainer), HabibiaDummyData.practiceSessions(), false)
+        val container = view.findViewById<LinearLayout>(R.id.historyContainer)
+        apiInBackground(
+            work = { parseSessionList(HabibiaApi.get("/score-sessions?type=PRACTICE")) },
+            onOk = { sessions ->
+                if (!isAdded) return@apiInBackground
+                bindHistory(container, sessions, false)
+            },
+            onError = { message ->
+                showMessage(message)
+                bindHistory(container, emptyList(), false)
+            }
+        )
     }
 }
 
@@ -451,7 +462,18 @@ class LeagueScoresFragment : Fragment() {
         consumePendingMessage()
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp(R.id.navScores) }
         view.findViewById<TextView>(R.id.historyTitle).text = "League Scores"
-        bindHistory(view.findViewById(R.id.historyContainer), HabibiaDummyData.leagueSessions(), true)
+        val container = view.findViewById<LinearLayout>(R.id.historyContainer)
+        apiInBackground(
+            work = { parseSessionList(HabibiaApi.get("/score-sessions?type=LEAGUE")) },
+            onOk = { sessions ->
+                if (!isAdded) return@apiInBackground
+                bindHistory(container, sessions, true)
+            },
+            onError = { message ->
+                showMessage(message)
+                bindHistory(container, emptyList(), true)
+            }
+        )
     }
 }
 
@@ -461,49 +483,22 @@ class ScoreDetailsFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val session = HabibiaDummyData.findSession(HabibiaSession.selectedSessionId)
-            ?: HabibiaDummyData.findSession(HabibiaSession.selectedScoreId)
-            ?: return
-        view.findViewById<ImageButton>(R.id.backButton).setOnClickListener {
-            if (HabibiaSession.isAdmin) {
-                goTo(AdminMemberProgressFragment())
-            } else if (session.type == SessionType.PRACTICE) {
-                goTo(PracticeScoresFragment())
+        val sessionId = HabibiaSession.selectedSessionId ?: HabibiaSession.selectedScoreId
+        if (sessionId.isNullOrBlank()) {
+            showMessage("Session not found")
+            return
+        }
+        apiInBackground({
+            val session = parseScoreSession(JSONObject(HabibiaApi.get("/score-sessions/$sessionId")))
+            val memberName = if (HabibiaSession.isAdmin && session.memberId.isNotBlank()) {
+                parseMember(JSONObject(HabibiaApi.get("/admin/members/${session.memberId}"))).fullName
             } else {
-                goTo(LeagueScoresFragment())
+                null
             }
-        }
-        val chip = view.findViewById<TextView>(R.id.detailTypeChip)
-        chip.text = session.typeLabel
-        chip.setChipStyle(
-            if (session.type == SessionType.PRACTICE) Color.parseColor("#1A9ABA55") else Color.parseColor("#1A528FD0"),
-            if (session.type == SessionType.PRACTICE) Color.parseColor("#7A9A3E") else Color.parseColor("#3E78B8")
-        )
-        view.findViewById<TextView>(R.id.detailTitle).text = session.title
-        val memberName = HabibiaDummyData.findMember(session.memberId)?.fullName
-        view.findViewById<TextView>(R.id.detailMeta).text = buildString {
-            if (HabibiaSession.isAdmin && !memberName.isNullOrBlank()) {
-                append(memberName)
-                append(" • ")
-            }
-            append("${formatDisplayDate(session.date)} • ${session.distanceLabel} • ${session.typeLabel}")
-        }
-        view.findViewById<TextView>(R.id.detailScore).text = session.scoreLabel
-        view.findViewById<View>(R.id.detailAverage).bindStat("Average arrow", formatAverage(session.averageArrow))
-        view.findViewById<View>(R.id.detailArrows).bindStat("Total arrows", session.totalArrows.toString())
-        view.findViewById<View>(R.id.detailTens).bindStat("10s", session.tensCount.toString())
-        view.findViewById<View>(R.id.detailXs).bindStat("Xs", session.xCount.toString())
-        view.findViewById<TextView>(R.id.detailNotes).text =
-            if (session.notes.isBlank()) "No notes" else session.notes
-
-        val container = view.findViewById<LinearLayout>(R.id.endsContainer)
-        container.removeAllViews()
-        session.ends.forEach { end ->
-            val item = layoutInflater.inflate(R.layout.item_end_row, container, false)
-            item.findViewById<TextView>(R.id.endTitle).text = "Round ${end.endNumber}"
-            item.findViewById<TextView>(R.id.endArrows).text = end.arrowLabels()
-            item.findViewById<TextView>(R.id.endTotal).text = "Total: ${end.total}"
-            container.addView(item)
+            session to memberName
+        }) { (session, memberName) ->
+            if (!isAdded) return@apiInBackground
+            bindScoreDetails(view, session, memberName)
         }
     }
 }
@@ -515,80 +510,33 @@ class ProgressFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val type = HabibiaSession.progressType
-        val memberId = HabibiaDummyData.viewingMemberId()
-        val viewedMember = HabibiaDummyData.findMember(memberId)
-        val sessions = if (type == SessionType.PRACTICE) {
-            HabibiaDummyData.practiceSessions(memberId)
-        } else {
-            HabibiaDummyData.leagueSessions(memberId)
-        }.sortedBy { it.date }
         val isPractice = type == SessionType.PRACTICE
+        val typeQuery = type.name
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener {
             if (HabibiaSession.isAdmin) goTo(AdminMemberProgressFragment()) else openMemberApp(R.id.navScores)
         }
-        val graphTitle = if (isPractice) "Practice Progress" else "League Progress"
-        view.findViewById<TextView>(R.id.progressTitle).text =
-            if (HabibiaSession.isAdmin) "${viewedMember?.firstName} • $graphTitle" else graphTitle
-        view.findViewById<TextView>(R.id.chartHeading).text = if (isPractice) "Practice Progress" else "League Performance"
-
-        val average = if (sessions.isEmpty()) 0.0 else sessions.map { it.averageArrow }.average()
-        val best = sessions.maxOfOrNull { it.totalScore } ?: 0
-        val latest = sessions.maxByOrNull { it.date }?.totalScore ?: 0
-        view.findViewById<View>(R.id.statAverage).bindStat(
-            if (isPractice) "Practice average" else "League average",
-            formatAverage(average)
-        )
-        view.findViewById<View>(R.id.statBest).bindStat(
-            if (isPractice) "Best practice" else "Best league score",
-            best.toString()
-        )
-        view.findViewById<View>(R.id.statLatest).bindStat(
-            if (isPractice) "Latest practice" else "Latest league score",
-            latest.toString()
-        )
-        view.findViewById<View>(R.id.statImprovement).bindStat(
-            "Improvement",
-            formatImprovement(HabibiaDummyData.sessionImprovement(type, memberId))
-        )
-        view.findViewById<TextView>(R.id.trendLabel).text =
-            if (isPractice) "Practice scores over recent sessions" else "League scores by month"
-
-        val container = view.findViewById<LinearLayout>(R.id.progressChartContainer)
-        container.removeAllViews()
-        if (sessions.isEmpty()) return
-        val max = sessions.maxOf { it.totalScore }.coerceAtLeast(1)
-        sessions.forEach { session ->
-            val col = LinearLayout(requireContext()).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f).apply {
-                    marginEnd = 8
-                }
+        apiInBackground({
+            val memberId = HabibiaSession.selectedMemberId
+            val sessionsPath = if (HabibiaSession.isAdmin && !memberId.isNullOrBlank()) {
+                "/admin/members/$memberId/score-sessions?type=$typeQuery"
+            } else {
+                "/score-sessions?type=$typeQuery"
             }
-            val value = TextView(requireContext()).apply {
-                text = session.totalScore.toString()
-                textSize = 11f
-                setTextColor(Color.parseColor("#6B7580"))
-                gravity = Gravity.CENTER
+            val sessions = parseSessionList(HabibiaApi.get(sessionsPath)).sortedBy { it.date }
+            val memberName = if (HabibiaSession.isAdmin && !memberId.isNullOrBlank()) {
+                parseMember(JSONObject(HabibiaApi.get("/admin/members/$memberId"))).firstName
+            } else {
+                null
             }
-            val bar = View(requireContext())
-            val height = ((session.totalScore.toFloat() / max) * 150f).toInt().coerceAtLeast(16)
-            bar.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height)
-            bar.background = GradientDrawable().apply {
-                cornerRadius = 10f
-                colors = intArrayOf(Color.parseColor("#9ABA55"), Color.parseColor("#528FD0"))
-                orientation = GradientDrawable.Orientation.BOTTOM_TOP
+            if (HabibiaSession.isAdmin && !memberId.isNullOrBlank()) {
+                HabibiaApi.get("/admin/members/$memberId/progress?type=$typeQuery")
+            } else if (sessions.isNotEmpty()) {
+                HabibiaApi.get("/score-sessions/${sessions.last().sessionId}/progress")
             }
-            val label = TextView(requireContext()).apply {
-                text = if (isPractice) session.date.takeLast(2) else monthLabel(session.date)
-                textSize = 10f
-                gravity = Gravity.CENTER
-                setTextColor(Color.parseColor("#6B7580"))
-            }
-            col.addView(value)
-            col.addView(bar)
-            col.addView(label)
-            container.addView(col)
+            Triple(sessions, memberName, isPractice)
+        }) { (sessions, memberName, practice) ->
+            if (!isAdded) return@apiInBackground
+            bindProgressScreen(view, sessions, memberName, practice)
         }
     }
 }
@@ -601,17 +549,19 @@ class AdminMemberListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { goTo(AdminDashboardFragment()) }
         val container = view.findViewById<LinearLayout>(R.id.membersListContainer)
+        var rows: List<AdminMemberRow> = emptyList()
         fun render(query: String) {
             container.removeAllViews()
-            val members = HabibiaDummyData.clubMembers().filter {
-                query.isBlank() || it.fullName.contains(query, true) || it.email.contains(query, true)
+            val members = rows.filter {
+                query.isBlank() || it.member.fullName.contains(query, true) || it.member.email.contains(query, true)
             }
             if (members.isEmpty()) {
                 container.bindEmptyState("No members found", "Try a different search term.")
                 return
             }
-            members.forEach { member ->
-                val sessions = HabibiaDummyData.sessionsFor(member.memberId)
+            members.forEach { row ->
+                val member = row.member
+                val sessions = row.sessions
                 val latest = sessions.maxByOrNull { it.date }
                 val item = layoutInflater.inflate(R.layout.item_session_card, container, false)
                 item.findViewById<TextView>(R.id.sessionTitle).text = member.fullName
@@ -637,7 +587,23 @@ class AdminMemberListFragment : Fragment() {
             }
         }
         view.findViewById<TextInputEditText>(R.id.searchMembersInput).addTextChangedListener(simpleWatcher { render(it) })
-        render("")
+        apiInBackground({
+            parseMembers(HabibiaApi.get("/admin/members"))
+                .filter { it.role != "Admin" }
+                .map { member ->
+                    val practice = parseSessionList(
+                        HabibiaApi.get("/admin/members/${member.memberId}/score-sessions?type=PRACTICE")
+                    )
+                    val league = parseSessionList(
+                        HabibiaApi.get("/admin/members/${member.memberId}/score-sessions?type=LEAGUE")
+                    )
+                    AdminMemberRow(member, practice + league)
+                }
+        }) { loaded ->
+            if (!isAdded) return@apiInBackground
+            rows = loaded
+            render(view.findViewById<TextInputEditText>(R.id.searchMembersInput).text?.toString().orEmpty())
+        }
     }
 }
 
@@ -647,22 +613,12 @@ class AdminMemberProgressFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val member = HabibiaDummyData.findMember(HabibiaSession.selectedMemberId) ?: return
-        HabibiaSession.selectedMemberId = member.memberId
+        val memberId = HabibiaSession.selectedMemberId
+        if (memberId.isNullOrBlank()) {
+            showMessage("Member not found")
+            return
+        }
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { goTo(AdminMemberListFragment()) }
-        view.findViewById<TextView>(R.id.memberNameText).text = member.fullName
-        view.findViewById<TextView>(R.id.memberMetaText).text = "${member.email} • ${member.role}"
-
-        val sessions = HabibiaDummyData.sessionsFor(member.memberId)
-        val practice = HabibiaDummyData.practiceSessions(member.memberId)
-        val league = HabibiaDummyData.leagueSessions(member.memberId)
-        val latest = sessions.maxByOrNull { it.date }
-        val average = if (sessions.isEmpty()) 0.0 else sessions.map { it.averageArrow }.average()
-        view.findViewById<View>(R.id.statLatest).bindStat("Latest", latest?.totalScore?.toString() ?: "–")
-        view.findViewById<View>(R.id.statAverage).bindStat("Average", formatAverage(average))
-        view.findViewById<View>(R.id.statPractice).bindStat("Practice", practice.size.toString())
-        view.findViewById<View>(R.id.statLeague).bindStat("League", league.size.toString())
-
         view.findViewById<Button>(R.id.practiceGraphButton).setOnClickListener {
             HabibiaSession.progressType = SessionType.PRACTICE
             goTo(ProgressFragment())
@@ -671,8 +627,32 @@ class AdminMemberProgressFragment : Fragment() {
             HabibiaSession.progressType = SessionType.LEAGUE
             goTo(ProgressFragment())
         }
-        bindHistory(view.findViewById(R.id.practiceContainer), practice, false)
-        bindHistory(view.findViewById(R.id.leagueContainer), league, true)
+        apiInBackground({
+            val member = parseMember(JSONObject(HabibiaApi.get("/admin/members/$memberId")))
+            val practice = parseSessionList(
+                HabibiaApi.get("/admin/members/$memberId/score-sessions?type=PRACTICE")
+            )
+            val league = parseSessionList(
+                HabibiaApi.get("/admin/members/$memberId/score-sessions?type=LEAGUE")
+            )
+            HabibiaApi.get("/admin/members/$memberId/progress?type=PRACTICE")
+            HabibiaApi.get("/admin/members/$memberId/progress?type=LEAGUE")
+            Triple(member, practice, league)
+        }) { (member, practice, league) ->
+            if (!isAdded) return@apiInBackground
+            HabibiaSession.selectedMemberId = member.memberId
+            view.findViewById<TextView>(R.id.memberNameText).text = member.fullName
+            view.findViewById<TextView>(R.id.memberMetaText).text = "${member.email} • ${member.role}"
+            val sessions = practice + league
+            val latest = sessions.maxByOrNull { it.date }
+            val average = if (sessions.isEmpty()) 0.0 else sessions.map { it.averageArrow }.average()
+            view.findViewById<View>(R.id.statLatest).bindStat("Latest", latest?.totalScore?.toString() ?: "–")
+            view.findViewById<View>(R.id.statAverage).bindStat("Average", formatAverage(average))
+            view.findViewById<View>(R.id.statPractice).bindStat("Practice", practice.size.toString())
+            view.findViewById<View>(R.id.statLeague).bindStat("League", league.size.toString())
+            bindHistory(view.findViewById(R.id.practiceContainer), practice, false)
+            bindHistory(view.findViewById(R.id.leagueContainer), league, true)
+        }
     }
 }
 
@@ -689,7 +669,7 @@ private fun startDraft(
     HabibiaSession.currentEndArrows.clear()
     HabibiaSession.draftSession = ScoreSession(
         sessionId = "S${System.currentTimeMillis()}",
-        memberId = HabibiaDummyData.member.memberId,
+        memberId = HabibiaSession.loggedInMemberId.orEmpty(),
         type = type,
         title = title,
         distanceMeters = distance,
@@ -799,4 +779,264 @@ private fun monthLabel(iso: String): String {
     val month = iso.split("-").getOrNull(1)?.toIntOrNull() ?: return iso
     return listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
         .getOrNull(month - 1) ?: iso
+}
+
+private data class AdminMemberRow(
+    val member: Member,
+    val sessions: List<ScoreSession>
+)
+
+private fun bindHubStats(view: View, practice: List<ScoreSession>, league: List<ScoreSession>) {
+    val all = practice + league
+    view.findViewById<TextView>(R.id.latestScoreText).text =
+        all.maxByOrNull { it.date }?.totalScore?.toString() ?: "-"
+    view.findViewById<TextView>(R.id.averageScoreText).text =
+        if (all.isEmpty()) "0" else all.map { it.totalScore }.average().toInt().toString()
+    view.findViewById<TextView>(R.id.highestScoreText).text =
+        (all.maxOfOrNull { it.totalScore } ?: 0).toString()
+    view.findViewById<TextView>(R.id.practiceHistorySummary).text =
+        if (practice.isEmpty()) "No practice sessions yet"
+        else "${practice.size} practice session${if (practice.size == 1) "" else "s"} recorded"
+    view.findViewById<TextView>(R.id.leagueHistorySummary).text =
+        if (league.isEmpty()) "No league rounds yet"
+        else "${league.size} league round${if (league.size == 1) "" else "s"} recorded"
+}
+
+private fun Fragment.bindSessionComplete(view: View, session: ScoreSession) {
+    val isPractice = session.type == SessionType.PRACTICE
+    view.findViewById<TextView>(R.id.completeHeader).text = if (isPractice) "Practice complete" else "League complete"
+    view.findViewById<TextView>(R.id.completeTitle).text =
+        if (isPractice) "Practice complete" else "League complete"
+    view.findViewById<TextView>(R.id.completeDistance).text = session.distanceLabel.uppercase()
+    view.findViewById<TextView>(R.id.completeScore).text = session.scoreLabel
+    view.findViewById<View>(R.id.statAverage).bindStat("Average", formatAverage(session.averageArrow))
+    view.findViewById<View>(R.id.statArrows).bindStat("Arrows", session.totalArrows.toString())
+    view.findViewById<View>(R.id.statTens).bindStat("10s", session.tensCount.toString())
+    view.findViewById<View>(R.id.statXs).bindStat("Xs", session.xCount.toString())
+    view.findViewById<View>(R.id.statBest).bindStat("Best round", session.highestEnd.toString())
+    view.findViewById<View>(R.id.statRounds).bindStat("Rounds", session.numberOfEnds.toString())
+    view.findViewById<Button>(R.id.viewDetailsButton).setOnClickListener { goTo(ScoreDetailsFragment()) }
+    view.findViewById<Button>(R.id.viewProgressButton).setOnClickListener {
+        HabibiaSession.progressType = session.type
+        goTo(ProgressFragment())
+    }
+    view.findViewById<Button>(R.id.backToHistoryButton).apply {
+        text = if (isPractice) "Back to Practice Scores" else "View League Scores"
+        setOnClickListener {
+            if (isPractice) goTo(PracticeScoresFragment()) else goTo(LeagueScoresFragment())
+        }
+    }
+}
+
+private fun Fragment.bindScoreDetails(view: View, session: ScoreSession, memberName: String?) {
+    view.findViewById<ImageButton>(R.id.backButton).setOnClickListener {
+        if (HabibiaSession.isAdmin) {
+            goTo(AdminMemberProgressFragment())
+        } else if (session.type == SessionType.PRACTICE) {
+            goTo(PracticeScoresFragment())
+        } else {
+            goTo(LeagueScoresFragment())
+        }
+    }
+    val chip = view.findViewById<TextView>(R.id.detailTypeChip)
+    chip.text = session.typeLabel
+    chip.setChipStyle(
+        if (session.type == SessionType.PRACTICE) Color.parseColor("#1A9ABA55") else Color.parseColor("#1A528FD0"),
+        if (session.type == SessionType.PRACTICE) Color.parseColor("#7A9A3E") else Color.parseColor("#3E78B8")
+    )
+    view.findViewById<TextView>(R.id.detailTitle).text = session.title
+    view.findViewById<TextView>(R.id.detailMeta).text = buildString {
+        if (HabibiaSession.isAdmin && !memberName.isNullOrBlank()) {
+            append(memberName)
+            append(" • ")
+        }
+        append("${formatDisplayDate(session.date)} • ${session.distanceLabel} • ${session.typeLabel}")
+    }
+    view.findViewById<TextView>(R.id.detailScore).text = session.scoreLabel
+    view.findViewById<View>(R.id.detailAverage).bindStat("Average arrow", formatAverage(session.averageArrow))
+    view.findViewById<View>(R.id.detailArrows).bindStat("Total arrows", session.totalArrows.toString())
+    view.findViewById<View>(R.id.detailTens).bindStat("10s", session.tensCount.toString())
+    view.findViewById<View>(R.id.detailXs).bindStat("Xs", session.xCount.toString())
+    view.findViewById<TextView>(R.id.detailNotes).text =
+        if (session.notes.isBlank()) "No notes" else session.notes
+    val container = view.findViewById<LinearLayout>(R.id.endsContainer)
+    container.removeAllViews()
+    session.ends.forEach { end ->
+        val item = layoutInflater.inflate(R.layout.item_end_row, container, false)
+        item.findViewById<TextView>(R.id.endTitle).text = "Round ${end.endNumber}"
+        item.findViewById<TextView>(R.id.endArrows).text = end.arrowLabels()
+        item.findViewById<TextView>(R.id.endTotal).text = "Total: ${end.total}"
+        container.addView(item)
+    }
+}
+
+private fun Fragment.bindProgressScreen(
+    view: View,
+    sessions: List<ScoreSession>,
+    memberName: String?,
+    isPractice: Boolean
+) {
+    val graphTitle = if (isPractice) "Practice Progress" else "League Progress"
+    view.findViewById<TextView>(R.id.progressTitle).text =
+        if (HabibiaSession.isAdmin && !memberName.isNullOrBlank()) "$memberName • $graphTitle" else graphTitle
+    view.findViewById<TextView>(R.id.chartHeading).text = if (isPractice) "Practice Progress" else "League Performance"
+    val average = if (sessions.isEmpty()) 0.0 else sessions.map { it.averageArrow }.average()
+    val best = sessions.maxOfOrNull { it.totalScore } ?: 0
+    val latest = sessions.maxByOrNull { it.date }?.totalScore ?: 0
+    view.findViewById<View>(R.id.statAverage).bindStat(
+        if (isPractice) "Practice average" else "League average",
+        formatAverage(average)
+    )
+    view.findViewById<View>(R.id.statBest).bindStat(
+        if (isPractice) "Best practice" else "Best league score",
+        best.toString()
+    )
+    view.findViewById<View>(R.id.statLatest).bindStat(
+        if (isPractice) "Latest practice" else "Latest league score",
+        latest.toString()
+    )
+    view.findViewById<View>(R.id.statImprovement).bindStat("Improvement", formatImprovement(sessionImprovement(sessions)))
+    view.findViewById<TextView>(R.id.trendLabel).text =
+        if (isPractice) "Practice scores over recent sessions" else "League scores by month"
+    val container = view.findViewById<LinearLayout>(R.id.progressChartContainer)
+    container.removeAllViews()
+    if (sessions.isEmpty()) return
+    val max = sessions.maxOf { it.totalScore }.coerceAtLeast(1)
+    sessions.forEach { session ->
+        val col = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f).apply {
+                marginEnd = 8
+            }
+        }
+        val value = TextView(requireContext()).apply {
+            text = session.totalScore.toString()
+            textSize = 11f
+            setTextColor(Color.parseColor("#6B7580"))
+            gravity = Gravity.CENTER
+        }
+        val bar = View(requireContext())
+        val height = ((session.totalScore.toFloat() / max) * 150f).toInt().coerceAtLeast(16)
+        bar.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height)
+        bar.background = GradientDrawable().apply {
+            cornerRadius = 10f
+            colors = intArrayOf(Color.parseColor("#9ABA55"), Color.parseColor("#528FD0"))
+            orientation = GradientDrawable.Orientation.BOTTOM_TOP
+        }
+        val label = TextView(requireContext()).apply {
+            text = if (isPractice) session.date.takeLast(2) else monthLabel(session.date)
+            textSize = 10f
+            gravity = Gravity.CENTER
+            setTextColor(Color.parseColor("#6B7580"))
+        }
+        col.addView(value)
+        col.addView(bar)
+        col.addView(label)
+        container.addView(col)
+    }
+}
+
+private fun sessionImprovement(sessions: List<ScoreSession>): Double {
+    val ordered = sessions.sortedBy { it.date }
+    if (ordered.size < 2) return 0.0
+    val first = ordered.first().totalScore.toDouble()
+    val latest = ordered.last().totalScore.toDouble()
+    if (first == 0.0) return 0.0
+    return ((latest - first) / first) * 100.0
+}
+
+private fun scoreSessionToPostJson(session: ScoreSession): String {
+    val body = JSONObject()
+    body.put("type", session.type.name)
+    body.put("title", session.title)
+    body.put("distanceMeters", session.distanceMeters)
+    body.put("arrowsPerEnd", session.arrowsPerEnd)
+    body.put("numberOfEnds", session.numberOfEnds)
+    body.put("date", session.date)
+    body.put("notes", session.notes)
+    if (session.type == SessionType.LEAGUE) {
+        session.ranking?.let { body.put("ranking", it) }
+        session.fieldSize?.let { body.put("fieldSize", it) }
+        session.leagueName?.let { body.put("leagueName", it) }
+    }
+    val ends = JSONArray()
+    session.ends.forEach { end ->
+        val endJson = JSONObject()
+        endJson.put("endNumber", end.endNumber)
+        val arrows = JSONArray()
+        end.arrows.forEach { arrow ->
+            arrows.put(JSONObject().put("value", arrow.value).put("isX", arrow.isX))
+        }
+        endJson.put("arrows", arrows)
+        ends.put(endJson)
+    }
+    body.put("ends", ends)
+    return body.toString()
+}
+
+private fun parseSessionType(raw: String): SessionType {
+    return if (raw.equals("LEAGUE", ignoreCase = true)) SessionType.LEAGUE else SessionType.PRACTICE
+}
+
+private fun parseScoreSession(obj: JSONObject): ScoreSession {
+    val endsJson = obj.optJSONArray("ends") ?: JSONArray()
+    val ends = mutableListOf<ScoreEnd>()
+    for (i in 0 until endsJson.length()) {
+        val endObj = endsJson.optJSONObject(i) ?: continue
+        val arrowsJson = endObj.optJSONArray("arrows") ?: JSONArray()
+        val arrows = mutableListOf<ArrowScore>()
+        for (j in 0 until arrowsJson.length()) {
+            val arrowObj = arrowsJson.optJSONObject(j) ?: continue
+            arrows.add(ArrowScore(arrowObj.optInt("value"), arrowObj.optBoolean("isX")))
+        }
+        ends.add(ScoreEnd(endObj.optInt("endNumber", i + 1), arrows))
+    }
+    return ScoreSession(
+        sessionId = obj.optString("sessionId"),
+        memberId = obj.optString("memberId"),
+        type = parseSessionType(obj.optString("type")),
+        title = obj.optString("title"),
+        distanceMeters = obj.optInt("distanceMeters"),
+        arrowsPerEnd = obj.optInt("arrowsPerEnd"),
+        numberOfEnds = obj.optInt("numberOfEnds", ends.size),
+        date = obj.optString("date"),
+        notes = obj.optString("notes"),
+        ends = ends,
+        ranking = obj.optNullableInt("ranking"),
+        fieldSize = obj.optNullableInt("fieldSize"),
+        leagueName = obj.optNullableString("leagueName")
+    )
+}
+
+private fun parseSessionList(json: String): List<ScoreSession> {
+    val root = JSONObject(json)
+    val array = root.optJSONArray("sessions") ?: JSONArray()
+    return (0 until array.length()).map { parseScoreSession(array.getJSONObject(it)) }
+}
+
+private fun parseMembers(json: String): List<Member> {
+    val root = JSONObject(json)
+    val array = root.optJSONArray("members") ?: JSONArray()
+    return (0 until array.length()).map { parseMember(array.getJSONObject(it)) }
+}
+
+private fun parseMember(obj: JSONObject): Member = Member(
+    memberId = obj.optString("memberId"),
+    firstName = obj.optString("firstName"),
+    lastName = obj.optString("lastName"),
+    email = obj.optString("email"),
+    role = obj.optString("role"),
+    emailVerified = obj.optBoolean("emailVerified"),
+    dateJoined = obj.optString("dateJoined")
+)
+
+private fun JSONObject.optNullableInt(key: String): Int? {
+    if (!has(key) || isNull(key)) return null
+    return optInt(key)
+}
+
+private fun JSONObject.optNullableString(key: String): String? {
+    if (!has(key) || isNull(key)) return null
+    return optString(key).ifBlank { null }
 }
