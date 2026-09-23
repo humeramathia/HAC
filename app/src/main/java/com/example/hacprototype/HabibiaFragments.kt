@@ -18,6 +18,7 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import org.json.JSONArray
 import org.json.JSONObject
 
 class SplashFragment : Fragment() {
@@ -95,33 +96,18 @@ class LoginFragment : Fragment() {
             },
             onError = { message ->
                 loginButton?.isEnabled = true
+                if (message.contains("verify your email", ignoreCase = true)) {
+                    HabibiaSession.pendingEmail = email
+                    HabibiaSession.pendingPassword = password
+                    goTo(EmailVerificationFragment())
+                    return@apiInBackground
+                }
                 passwordError?.text = message
                 passwordError?.visibility = View.VISIBLE
             },
             onOk = { json ->
                 loginButton?.isEnabled = true
-                val body = JSONObject(json)
-                val memberJson = body.optJSONObject("member") ?: JSONObject()
-                val member = Member(
-                    memberId = memberJson.optString("memberId"),
-                    firstName = memberJson.optString("firstName"),
-                    lastName = memberJson.optString("lastName"),
-                    email = memberJson.optString("email"),
-                    role = memberJson.optString("role").ifBlank { body.optString("role") },
-                    emailVerified = memberJson.optBoolean("emailVerified"),
-                    dateJoined = memberJson.optString("dateJoined")
-                )
-                HabibiaSession.authToken = body.optString("token").ifBlank { null }
-                HabibiaSession.loggedInMemberId = member.memberId.ifBlank { null }
-                HabibiaDummyData.member = member
-                when (body.optString("role")) {
-                    "Admin" -> openAdminApp()
-                    "Member" -> openMemberApp()
-                    else -> {
-                        passwordError?.text = "Unknown role"
-                        passwordError?.visibility = View.VISIBLE
-                    }
-                }
+                applyAuthSuccess(json)
             }
         )
     }
@@ -147,8 +133,36 @@ class RegisterFragment : Fragment() {
                 showMessage("Passwords do not match")
                 return@setOnClickListener
             }
-            HabibiaDummyData.member = HabibiaDummyData.member.copy(firstName = first, lastName = last, email = email)
-            goTo(EmailVerificationFragment())
+            val button = view.findViewById<Button>(R.id.registerButton)
+            button.isEnabled = false
+            apiInBackground(
+                work = {
+                    HabibiaApi.post(
+                        "/auth/register",
+                        JSONObject()
+                            .put("firstName", first)
+                            .put("lastName", last)
+                            .put("email", email)
+                            .put("password", password)
+                            .toString(),
+                        token = null
+                    )
+                },
+                onError = { message ->
+                    button.isEnabled = true
+                    showMessage(message)
+                },
+                onOk = {
+                    HabibiaSession.pendingEmail = email
+                    HabibiaSession.pendingPassword = password
+                    HabibiaDummyData.member = HabibiaDummyData.member.copy(
+                        firstName = first,
+                        lastName = last,
+                        email = email
+                    )
+                    goTo(EmailVerificationFragment())
+                }
+            )
         }
         view.findViewById<Button>(R.id.backToLoginButton).setOnClickListener { goTo(LoginFragment()) }
     }
@@ -160,9 +174,65 @@ class EmailVerificationFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        val email = HabibiaSession.pendingEmail.orEmpty()
+        val password = HabibiaSession.pendingPassword.orEmpty()
+        view.findViewById<TextView>(R.id.verifyEmailText).text = email.ifBlank { "your email address" }
+        view.findViewById<Button>(R.id.backToLoginButton).setOnClickListener { goTo(LoginFragment()) }
+
         view.findViewById<Button>(R.id.verifyButton).setOnClickListener {
-            showMessage("Email verified")
-            openMemberApp()
+            if (email.isBlank() || password.isBlank()) {
+                showMessage("Please register or log in first")
+                return@setOnClickListener
+            }
+            val button = view.findViewById<Button>(R.id.verifyButton)
+            button.isEnabled = false
+            apiInBackground(
+                work = {
+                    HabibiaApi.post(
+                        "/auth/resend-verification",
+                        JSONObject().put("email", email).put("password", password).toString(),
+                        token = null
+                    )
+                },
+                onError = { message ->
+                    button.isEnabled = true
+                    showMessage(message)
+                },
+                onOk = { json ->
+                    button.isEnabled = true
+                    val already = JSONObject(json).optBoolean("alreadyVerified")
+                    if (already) {
+                        showMessage("Email already verified. You can continue.")
+                    } else {
+                        showMessage("Verification email sent. Check your inbox.")
+                    }
+                }
+            )
+        }
+
+        view.findViewById<Button>(R.id.continueButton).setOnClickListener {
+            if (email.isBlank() || password.isBlank()) {
+                showMessage("Please register or log in first")
+                return@setOnClickListener
+            }
+            val button = view.findViewById<Button>(R.id.continueButton)
+            button.isEnabled = false
+            apiInBackground(
+                work = {
+                    HabibiaApi.post(
+                        "/auth/confirm-verification",
+                        JSONObject().put("email", email).put("password", password).toString(),
+                        token = null
+                    )
+                },
+                onError = { message ->
+                    button.isEnabled = true
+                    showMessage(message)
+                },
+                onOk = { json ->
+                    applyAuthSuccess(json)
+                }
+            )
         }
     }
 }
@@ -208,9 +278,12 @@ class MemberDashboardFragment : Fragment() {
         view.findViewById<TextView>(R.id.greetingText).text =
             "${HabibiaDummyData.greeting()}, ${member.firstName}"
 
-        val unread = HabibiaDummyData.unreadCount()
-        view.findViewById<View>(R.id.notificationDot).visibility =
-            if (unread > 0) View.VISIBLE else View.GONE
+        view.findViewById<View>(R.id.notificationDot).visibility = View.GONE
+        apiInBackground({ parseNotificationList(HabibiaApi.get("/notifications")) }) { notifications ->
+            if (!isAdded) return@apiInBackground
+            view.findViewById<View>(R.id.notificationDot).visibility =
+                if (notifications.any { !it.isRead }) View.VISIBLE else View.GONE
+        }
 
         val event = HabibiaDummyData.nextEvent()
         if (event != null) {
@@ -282,6 +355,8 @@ class MemberDashboardFragment : Fragment() {
 class ClubCalendarFragment : Fragment() {
     private var filter = "All"
     private var query = ""
+    private var events = emptyList<ClubEvent>()
+    private var competitions = emptyList<Competition>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_club_calendar, container, false)
@@ -301,13 +376,20 @@ class ClubCalendarFragment : Fragment() {
             }
             render(view)
         }
-        render(view)
+        apiInBackground({
+            parseEventList(HabibiaApi.get("/events")) to parseCompetitionList(HabibiaApi.get("/competitions"))
+        }) { (loadedEvents, loadedCompetitions) ->
+            if (!isAdded) return@apiInBackground
+            events = loadedEvents
+            competitions = loadedCompetitions
+            render(view)
+        }
     }
 
     private fun render(view: View) {
         val container = view.findViewById<LinearLayout>(R.id.eventsListContainer)
         container.removeAllViews()
-        val eventItems = HabibiaDummyData.events.filter {
+        val eventItems = events.filter {
             val typeMatch = when (filter) {
                 "All" -> true
                 "Practice" -> it.type.equals("Practice", true)
@@ -317,7 +399,7 @@ class ClubCalendarFragment : Fragment() {
             typeMatch && (query.isBlank() || it.title.contains(query, true) || it.location.contains(query, true))
         }
         val competitionItems = if (filter == "All" || filter == "Competition") {
-            HabibiaDummyData.competitions.filter {
+            competitions.filter {
                 query.isBlank() || it.competitionName.contains(query, true) || it.venue.contains(query, true)
             }
         } else emptyList()
@@ -370,17 +452,19 @@ class EventDetailsFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val event = HabibiaDummyData.events.find { it.eventId == HabibiaSession.selectedEventId }
-            ?: HabibiaDummyData.events.firstOrNull()
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp(R.id.navCalendar) }
-        if (event == null) return
-        view.findViewById<TextView>(R.id.eventTitle).text = event.title
-        view.findViewById<TextView>(R.id.eventDate).text = formatDisplayDate(event.eventDate)
-        view.findViewById<TextView>(R.id.eventTime).text = event.eventTime
-        view.findViewById<TextView>(R.id.eventLocation).text = event.location
-        view.findViewById<TextView>(R.id.eventDescription).text = event.description
-        view.findViewById<Button>(R.id.primaryActionButton).setOnClickListener {
-            showMessage("Added to your club plan")
+        apiInBackground({ parseEventList(HabibiaApi.get("/events")) }) { events ->
+            if (!isAdded) return@apiInBackground
+            val event = events.find { it.eventId == HabibiaSession.selectedEventId } ?: events.firstOrNull()
+            if (event == null) return@apiInBackground
+            view.findViewById<TextView>(R.id.eventTitle).text = event.title
+            view.findViewById<TextView>(R.id.eventDate).text = formatDisplayDate(event.eventDate)
+            view.findViewById<TextView>(R.id.eventTime).text = event.eventTime
+            view.findViewById<TextView>(R.id.eventLocation).text = event.location
+            view.findViewById<TextView>(R.id.eventDescription).text = event.description
+            view.findViewById<Button>(R.id.primaryActionButton).setOnClickListener {
+                showMessage("Added to your club plan")
+            }
         }
     }
 }
@@ -392,9 +476,10 @@ class CompetitionFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val container = view.findViewById<LinearLayout>(R.id.competitionsListContainer)
+        var competitions = emptyList<Competition>()
         fun render(query: String) {
             container.removeAllViews()
-            val items = HabibiaDummyData.competitions.filter {
+            val items = competitions.filter {
                 query.isBlank() || it.competitionName.contains(query, true) || it.venue.contains(query, true)
             }
             if (items.isEmpty()) {
@@ -420,7 +505,11 @@ class CompetitionFragment : Fragment() {
         }
         view.findViewById<TextInputEditText>(R.id.searchCompetitionsInput).addTextChangedListener(simpleWatcher { render(it) })
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp() }
-        render("")
+        apiInBackground({ parseCompetitionList(HabibiaApi.get("/competitions")) }) { loaded ->
+            if (!isAdded) return@apiInBackground
+            competitions = loaded
+            render(view.findViewById<TextInputEditText>(R.id.searchCompetitionsInput).text?.toString().orEmpty())
+        }
     }
 }
 
@@ -430,22 +519,25 @@ class CompetitionDetailsFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val competition = HabibiaDummyData.competitions.find { it.competitionId == HabibiaSession.selectedCompetitionId }
-            ?: HabibiaDummyData.competitions.firstOrNull() ?: return
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener {
             if (HabibiaSession.isAdmin) goTo(ManageCompetitionsFragment()) else goTo(CompetitionFragment())
         }
-        val status = view.findViewById<TextView>(R.id.statusChip)
-        status.text = competition.status
-        status.setChipStyle(competitionStatusColor(competition.status), competitionStatusTextColor(competition.status))
-        view.findViewById<TextView>(R.id.competitionName).text = competition.competitionName
-        view.findViewById<TextView>(R.id.competitionDate).text = formatDisplayDate(competition.competitionDate)
-        view.findViewById<TextView>(R.id.venueText).text = competition.venue
-        view.findViewById<TextView>(R.id.deadlineText).text =
-            "Registration deadline: ${formatDisplayDate(competition.registrationDeadline)}"
-        view.findViewById<TextView>(R.id.descriptionText).text = competition.description
-        view.findViewById<Button>(R.id.primaryActionButton).setOnClickListener {
-            showMessage("Registration interest saved")
+        apiInBackground({ parseCompetitionList(HabibiaApi.get("/competitions")) }) { competitions ->
+            if (!isAdded) return@apiInBackground
+            val competition = competitions.find { it.competitionId == HabibiaSession.selectedCompetitionId }
+                ?: competitions.firstOrNull() ?: return@apiInBackground
+            val status = view.findViewById<TextView>(R.id.statusChip)
+            status.text = competition.status
+            status.setChipStyle(competitionStatusColor(competition.status), competitionStatusTextColor(competition.status))
+            view.findViewById<TextView>(R.id.competitionName).text = competition.competitionName
+            view.findViewById<TextView>(R.id.competitionDate).text = formatDisplayDate(competition.competitionDate)
+            view.findViewById<TextView>(R.id.venueText).text = competition.venue
+            view.findViewById<TextView>(R.id.deadlineText).text =
+                "Registration deadline: ${formatDisplayDate(competition.registrationDeadline)}"
+            view.findViewById<TextView>(R.id.descriptionText).text = competition.description
+            view.findViewById<Button>(R.id.primaryActionButton).setOnClickListener {
+                showMessage("Registration interest saved")
+            }
         }
     }
 }
@@ -458,15 +550,22 @@ class AnnouncementFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp() }
         val container = view.findViewById<LinearLayout>(R.id.announcementsListContainer)
-        container.removeAllViews()
-        HabibiaDummyData.announcements.forEach { announcement ->
-            val item = layoutInflater.inflate(R.layout.item_manage_row, container, false)
-            item.findViewById<TextView>(R.id.titleText).text = announcement.title
-            item.findViewById<TextView>(R.id.subtitleText).text =
-                "${announcement.content}\n${formatDisplayDate(announcement.datePosted)}"
-            item.findViewById<Button>(R.id.editButton).visibility = View.GONE
-            item.findViewById<Button>(R.id.deleteButton).visibility = View.GONE
-            container.addView(item)
+        apiInBackground({ parseAnnouncementList(HabibiaApi.get("/announcements")) }) { announcements ->
+            if (!isAdded) return@apiInBackground
+            container.removeAllViews()
+            if (announcements.isEmpty()) {
+                container.bindEmptyState("No announcements", "Club updates will appear here.")
+                return@apiInBackground
+            }
+            announcements.forEach { announcement ->
+                val item = layoutInflater.inflate(R.layout.item_manage_row, container, false)
+                item.findViewById<TextView>(R.id.titleText).text = announcement.title
+                item.findViewById<TextView>(R.id.subtitleText).text =
+                    "${announcement.content}\n${formatDisplayDate(announcement.datePosted)}"
+                item.findViewById<Button>(R.id.editButton).visibility = View.GONE
+                item.findViewById<Button>(R.id.deleteButton).visibility = View.GONE
+                container.addView(item)
+            }
         }
     }
 }
@@ -479,16 +578,17 @@ class NotificationFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp() }
         val container = view.findViewById<LinearLayout>(R.id.notificationsListContainer)
+        var notifications = emptyList<Notification>()
         fun render() {
             container.removeAllViews()
-            if (HabibiaDummyData.notifications.isEmpty()) {
+            if (notifications.isEmpty()) {
                 container.bindEmptyState(
                     getString(R.string.empty_notifications_title),
                     getString(R.string.empty_notifications_body)
                 )
                 return
             }
-            HabibiaDummyData.notifications.forEach { notification ->
+            notifications.forEach { notification ->
                 val item = layoutInflater.inflate(R.layout.item_notification_row, container, false)
                 item.findViewById<View>(R.id.unreadDot).visibility =
                     if (notification.isRead) View.INVISIBLE else View.VISIBLE
@@ -499,19 +599,30 @@ class NotificationFragment : Fragment() {
                     item.setBackgroundColor(Color.parseColor("#14FE3B3A"))
                 }
                 item.setOnClickListener {
-                    notification.isRead = true
-                    render()
+                    if (!notification.isRead) {
+                        apiInBackground({
+                            HabibiaApi.put("/notifications/${notification.notificationId}/read", "{}")
+                        }) {
+                            notification.isRead = true
+                            render()
+                        }
+                    }
                 }
                 container.addView(item)
             }
         }
-        render()
+        apiInBackground({ parseNotificationList(HabibiaApi.get("/notifications")) }) { loaded ->
+            if (!isAdded) return@apiInBackground
+            notifications = loaded
+            render()
+        }
     }
 }
 
 class BeginnerResourcesFragment : Fragment() {
     private var category = "All"
     private var query = ""
+    private var resources = emptyList<BeginnerResource>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_beginner_resources, container, false)
@@ -533,13 +644,17 @@ class BeginnerResourcesFragment : Fragment() {
             }
             render(view)
         }
-        render(view)
+        apiInBackground({ parseResourceList(HabibiaApi.get("/resources")) }) { loaded ->
+            if (!isAdded) return@apiInBackground
+            resources = loaded
+            render(view)
+        }
     }
 
     private fun render(view: View) {
         val container = view.findViewById<LinearLayout>(R.id.resourcesListContainer)
         container.removeAllViews()
-        val items = HabibiaDummyData.resources.filter {
+        val items = resources.filter {
             (category == "All" || it.category.equals(category, true)) &&
                 (query.isBlank() || it.title.contains(query, true) || it.category.contains(query, true))
         }
@@ -567,14 +682,17 @@ class ResourceDetailsFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val resource = HabibiaDummyData.resources.find { it.resourceId == HabibiaSession.selectedResourceId }
-            ?: HabibiaDummyData.resources.firstOrNull() ?: return
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { openMemberApp(R.id.navResources) }
-        view.findViewById<TextView>(R.id.resourceCategory).text = resource.category
-        view.findViewById<TextView>(R.id.resourceTitle).text = resource.title
-        view.findViewById<TextView>(R.id.resourceDescription).text = resource.description
-        view.findViewById<Button>(R.id.openLinkButton).setOnClickListener {
-            showMessage("Opening: ${resource.resourceLink}")
+        apiInBackground({ parseResourceList(HabibiaApi.get("/resources")) }) { resources ->
+            if (!isAdded) return@apiInBackground
+            val resource = resources.find { it.resourceId == HabibiaSession.selectedResourceId }
+                ?: resources.firstOrNull() ?: return@apiInBackground
+            view.findViewById<TextView>(R.id.resourceCategory).text = resource.category
+            view.findViewById<TextView>(R.id.resourceTitle).text = resource.title
+            view.findViewById<TextView>(R.id.resourceDescription).text = resource.description
+            view.findViewById<Button>(R.id.openLinkButton).setOnClickListener {
+                showMessage("Opening: ${resource.resourceLink}")
+            }
         }
     }
 }
@@ -586,20 +704,33 @@ class ProfileFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         consumePendingMessage()
-        val member = HabibiaDummyData.member
-        val profile = HabibiaDummyData.profile
-        view.findViewById<TextView>(R.id.profileName).text = member.fullName
-        view.findViewById<TextView>(R.id.memberSince).text = "Member since ${formatDisplayDate(member.dateJoined)}"
-        view.findViewById<TextView>(R.id.experienceText).text = "Experience Level: ${profile.experienceLevel}"
-        view.findViewById<TextView>(R.id.bowTypeText).text = "Bow Type: ${profile.bowType}"
-        view.findViewById<TextView>(R.id.divisionText).text = "Division: ${profile.division}"
-        view.findViewById<TextView>(R.id.emailText).text = "Email: ${member.email}"
-        view.findViewById<TextView>(R.id.emergencyText).text = "Emergency Contact: ${profile.emergencyContact}"
+        bindProfile(view, HabibiaDummyData.member, HabibiaDummyData.profile)
+        apiInBackground({
+            parseClubMember(JSONObject(HabibiaApi.get("/me"))) to
+                parseMemberProfile(JSONObject(HabibiaApi.get("/me/profile")))
+        }) { (member, profile) ->
+            if (!isAdded) return@apiInBackground
+            HabibiaDummyData.member = member
+            HabibiaDummyData.profile = profile
+            bindProfile(view, member, profile)
+        }
         view.findViewById<Button>(R.id.editProfileButton).setOnClickListener { goTo(EditProfileFragment()) }
         view.findViewById<Button>(R.id.settingsButton).setOnClickListener {
             showMessage("Settings are available in a future release")
         }
-        view.findViewById<Button>(R.id.logoutButton).setOnClickListener { goTo(LoginFragment()) }
+        view.findViewById<Button>(R.id.logoutButton).setOnClickListener {
+            val token = HabibiaSession.authToken
+            if (!token.isNullOrBlank()) {
+                Thread {
+                    try {
+                        HabibiaApi.post("/auth/logout", "{}", token)
+                    } catch (_: Exception) {
+                    }
+                }.start()
+            }
+            HabibiaSession.clearAuth()
+            goTo(LoginFragment())
+        }
     }
 }
 
@@ -626,15 +757,35 @@ class EditProfileFragment : Fragment() {
                 showMessage("Name fields are required")
                 return@setOnClickListener
             }
-            member.firstName = first
-            member.lastName = last
-            member.email = view.findViewById<TextInputEditText>(R.id.emailInput).text?.toString().orEmpty()
-            profile.experienceLevel = view.findViewById<TextInputEditText>(R.id.experienceInput).text?.toString().orEmpty()
-            profile.bowType = view.findViewById<TextInputEditText>(R.id.bowTypeInput).text?.toString().orEmpty()
-            profile.division = view.findViewById<TextInputEditText>(R.id.divisionInput).text?.toString().orEmpty()
-            profile.emergencyContact = view.findViewById<TextInputEditText>(R.id.emergencyInput).text?.toString().orEmpty()
-            HabibiaSession.pendingSnackbar = getString(R.string.profile_updated)
-            openMemberApp(R.id.navProfile)
+            val saveButton = view.findViewById<Button>(R.id.saveProfileButton)
+            saveButton.isEnabled = false
+            apiInBackground(
+                work = {
+                    HabibiaApi.put(
+                        "/me/profile",
+                        JSONObject()
+                            .put("firstName", first)
+                            .put("lastName", last)
+                            .put("email", view.findViewById<TextInputEditText>(R.id.emailInput).text?.toString().orEmpty())
+                            .put("experienceLevel", view.findViewById<TextInputEditText>(R.id.experienceInput).text?.toString().orEmpty())
+                            .put("bowType", view.findViewById<TextInputEditText>(R.id.bowTypeInput).text?.toString().orEmpty())
+                            .put("division", view.findViewById<TextInputEditText>(R.id.divisionInput).text?.toString().orEmpty())
+                            .put("emergencyContact", view.findViewById<TextInputEditText>(R.id.emergencyInput).text?.toString().orEmpty())
+                            .toString()
+                    )
+                },
+                onError = { message ->
+                    saveButton.isEnabled = true
+                    showMessage(message)
+                },
+                onOk = { json ->
+                    val body = JSONObject(json)
+                    body.optJSONObject("member")?.let { HabibiaDummyData.member = parseClubMember(it) }
+                    body.optJSONObject("profile")?.let { HabibiaDummyData.profile = parseMemberProfile(it) }
+                    HabibiaSession.pendingSnackbar = getString(R.string.profile_updated)
+                    openMemberApp(R.id.navProfile)
+                }
+            )
         }
     }
 }
@@ -647,10 +798,18 @@ class AdminDashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         HabibiaSession.isAdmin = true
         consumePendingMessage()
-        view.findViewById<TextView>(R.id.totalMembersText).text = HabibiaDummyData.members.size.toString()
-        view.findViewById<TextView>(R.id.upcomingEventsText).text = HabibiaDummyData.events.size.toString()
-        view.findViewById<TextView>(R.id.upcomingCompetitionsText).text = HabibiaDummyData.competitions.size.toString()
-        view.findViewById<TextView>(R.id.scoresRecordedText).text = HabibiaDummyData.scoreSessions.size.toString()
+        apiInBackground({
+            Triple(
+                parseClubMembers(HabibiaApi.get("/admin/members")).size,
+                parseEventList(HabibiaApi.get("/events")).size,
+                parseCompetitionList(HabibiaApi.get("/competitions")).size
+            )
+        }) { (memberCount, eventCount, competitionCount) ->
+            if (!isAdded) return@apiInBackground
+            view.findViewById<TextView>(R.id.totalMembersText).text = memberCount.toString()
+            view.findViewById<TextView>(R.id.upcomingEventsText).text = eventCount.toString()
+            view.findViewById<TextView>(R.id.upcomingCompetitionsText).text = competitionCount.toString()
+        }
         view.findViewById<Button>(R.id.memberProgressButton).setOnClickListener { goTo(AdminMemberListFragment()) }
         view.findViewById<Button>(R.id.manageMembersButton).setOnClickListener { goTo(ManageMembersFragment()) }
         view.findViewById<Button>(R.id.manageEventsButton).setOnClickListener { goTo(ManageEventsFragment()) }
@@ -659,8 +818,16 @@ class AdminDashboardFragment : Fragment() {
         view.findViewById<Button>(R.id.manageResourcesButton).setOnClickListener { goTo(ManageResourcesFragment()) }
         view.findViewById<Button>(R.id.statisticsButton).setOnClickListener { goTo(AdminStatisticsFragment()) }
         view.findViewById<Button>(R.id.logoutAdminButton).setOnClickListener {
-            HabibiaSession.isAdmin = false
-            HabibiaSession.selectedMemberId = null
+            val token = HabibiaSession.authToken
+            if (!token.isNullOrBlank()) {
+                Thread {
+                    try {
+                        HabibiaApi.post("/auth/logout", "{}", token)
+                    } catch (_: Exception) {
+                    }
+                }.start()
+            }
+            HabibiaSession.clearAuth()
             goTo(LoginFragment())
         }
     }
@@ -674,9 +841,10 @@ class ManageMembersFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { goTo(AdminDashboardFragment()) }
         val container = view.findViewById<LinearLayout>(R.id.membersListContainer)
+        var members = emptyList<Member>()
         fun render(query: String) {
             container.removeAllViews()
-            HabibiaDummyData.members.filter {
+            members.filter {
                 query.isBlank() || it.fullName.contains(query, true) || it.email.contains(query, true)
             }.forEach { member ->
                 val item = layoutInflater.inflate(R.layout.item_manage_row, container, false)
@@ -697,17 +865,22 @@ class ManageMembersFragment : Fragment() {
                         return@setOnClickListener
                     }
                     confirmDelete {
-                        HabibiaDummyData.members.remove(member)
-                        HabibiaSession.pendingSnackbar = "Member deleted"
-                        render(query)
-                        showMessage("Member deleted")
+                        apiInBackground({ HabibiaApi.delete("/admin/members/${member.memberId}") }) {
+                            members = members.filter { it.memberId != member.memberId }
+                            showMessage("Member deleted")
+                            render(query)
+                        }
                     }
                 }
                 container.addView(item)
             }
         }
         view.findViewById<TextInputEditText>(R.id.searchMembersInput).addTextChangedListener(simpleWatcher { render(it) })
-        render("")
+        apiInBackground({ parseClubMembers(HabibiaApi.get("/admin/members")) }) { loaded ->
+            if (!isAdded) return@apiInBackground
+            members = loaded
+            render(view.findViewById<TextInputEditText>(R.id.searchMembersInput).text?.toString().orEmpty())
+        }
     }
 }
 
@@ -724,9 +897,10 @@ class ManageEventsFragment : Fragment() {
             goTo(AddEditEventFragment())
         }
         val container = view.findViewById<LinearLayout>(R.id.eventsListContainer)
+        var events = emptyList<ClubEvent>()
         fun render(query: String) {
             container.removeAllViews()
-            HabibiaDummyData.events.filter {
+            events.filter {
                 query.isBlank() || it.title.contains(query, true) || it.location.contains(query, true)
             }.forEach { event ->
                 val item = layoutInflater.inflate(R.layout.item_manage_row, container, false)
@@ -739,16 +913,22 @@ class ManageEventsFragment : Fragment() {
                 }
                 item.findViewById<Button>(R.id.deleteButton).setOnClickListener {
                     confirmDelete {
-                        HabibiaDummyData.events.remove(event)
-                        showMessage(getString(R.string.event_deleted))
-                        render(query)
+                        apiInBackground({ HabibiaApi.delete("/events/${event.eventId}") }) {
+                            events = events.filter { it.eventId != event.eventId }
+                            showMessage(getString(R.string.event_deleted))
+                            render(query)
+                        }
                     }
                 }
                 container.addView(item)
             }
         }
         view.findViewById<TextInputEditText>(R.id.searchEventsInput).addTextChangedListener(simpleWatcher { render(it) })
-        render("")
+        apiInBackground({ parseEventList(HabibiaApi.get("/events")) }) { loaded ->
+            if (!isAdded) return@apiInBackground
+            events = loaded
+            render(view.findViewById<TextInputEditText>(R.id.searchEventsInput).text?.toString().orEmpty())
+        }
     }
 }
 
@@ -758,15 +938,19 @@ class AddEditEventFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val existing = HabibiaDummyData.events.find { it.eventId == HabibiaSession.editingEventId }
+        val editingId = HabibiaSession.editingEventId
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { goTo(ManageEventsFragment()) }
-        if (existing != null) {
-            view.findViewById<TextInputEditText>(R.id.titleInput).setText(existing.title)
-            view.findViewById<TextInputEditText>(R.id.dateInput).setText(existing.eventDate)
-            view.findViewById<TextInputEditText>(R.id.timeInput).setText(existing.eventTime)
-            view.findViewById<TextInputEditText>(R.id.locationInput).setText(existing.location)
-            view.findViewById<TextInputEditText>(R.id.descriptionInput).setText(existing.description)
-            view.findViewById<TextInputEditText>(R.id.typeInput).setText(existing.type)
+        if (!editingId.isNullOrBlank()) {
+            apiInBackground({ parseEventList(HabibiaApi.get("/events")) }) { events ->
+                if (!isAdded) return@apiInBackground
+                val existing = events.find { it.eventId == editingId } ?: return@apiInBackground
+                view.findViewById<TextInputEditText>(R.id.titleInput).setText(existing.title)
+                view.findViewById<TextInputEditText>(R.id.dateInput).setText(existing.eventDate)
+                view.findViewById<TextInputEditText>(R.id.timeInput).setText(existing.eventTime)
+                view.findViewById<TextInputEditText>(R.id.locationInput).setText(existing.location)
+                view.findViewById<TextInputEditText>(R.id.descriptionInput).setText(existing.description)
+                view.findViewById<TextInputEditText>(R.id.typeInput).setText(existing.type)
+            }
         }
         view.findViewById<Button>(R.id.saveEventButton).setOnClickListener {
             val title = view.findViewById<TextInputEditText>(R.id.titleInput).text?.toString().orEmpty()
@@ -774,28 +958,30 @@ class AddEditEventFragment : Fragment() {
                 showMessage("Title is required")
                 return@setOnClickListener
             }
-            if (existing != null) {
-                existing.title = title
-                existing.eventDate = view.findViewById<TextInputEditText>(R.id.dateInput).text?.toString().orEmpty()
-                existing.eventTime = view.findViewById<TextInputEditText>(R.id.timeInput).text?.toString().orEmpty()
-                existing.location = view.findViewById<TextInputEditText>(R.id.locationInput).text?.toString().orEmpty()
-                existing.description = view.findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString().orEmpty()
-                existing.type = view.findViewById<TextInputEditText>(R.id.typeInput).text?.toString().orEmpty().ifBlank { "Event" }
-            } else {
-                HabibiaDummyData.events.add(
-                    ClubEvent(
-                        eventId = "E${System.currentTimeMillis()}",
-                        title = title,
-                        description = view.findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString().orEmpty(),
-                        eventDate = view.findViewById<TextInputEditText>(R.id.dateInput).text?.toString().orEmpty(),
-                        eventTime = view.findViewById<TextInputEditText>(R.id.timeInput).text?.toString().orEmpty(),
-                        location = view.findViewById<TextInputEditText>(R.id.locationInput).text?.toString().orEmpty(),
-                        type = view.findViewById<TextInputEditText>(R.id.typeInput).text?.toString().orEmpty().ifBlank { "Event" }
-                    )
-                )
-            }
-            HabibiaSession.pendingSnackbar = getString(R.string.event_saved)
-            goTo(ManageEventsFragment())
+            val body = JSONObject()
+                .put("title", title)
+                .put("description", view.findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString().orEmpty())
+                .put("eventDate", view.findViewById<TextInputEditText>(R.id.dateInput).text?.toString().orEmpty())
+                .put("eventTime", view.findViewById<TextInputEditText>(R.id.timeInput).text?.toString().orEmpty())
+                .put("location", view.findViewById<TextInputEditText>(R.id.locationInput).text?.toString().orEmpty())
+                .put("type", view.findViewById<TextInputEditText>(R.id.typeInput).text?.toString().orEmpty().ifBlank { "Event" })
+                .toString()
+            val saveButton = view.findViewById<Button>(R.id.saveEventButton)
+            saveButton.isEnabled = false
+            apiInBackground(
+                work = {
+                    if (editingId.isNullOrBlank()) HabibiaApi.post("/events", body)
+                    else HabibiaApi.put("/events/$editingId", body)
+                },
+                onError = { message ->
+                    saveButton.isEnabled = true
+                    showMessage(message)
+                },
+                onOk = {
+                    HabibiaSession.pendingSnackbar = getString(R.string.event_saved)
+                    goTo(ManageEventsFragment())
+                }
+            )
         }
     }
 }
@@ -813,9 +999,10 @@ class ManageCompetitionsFragment : Fragment() {
             goTo(AddEditCompetitionFragment())
         }
         val container = view.findViewById<LinearLayout>(R.id.competitionsListContainer)
+        var competitions = emptyList<Competition>()
         fun render(query: String) {
             container.removeAllViews()
-            HabibiaDummyData.competitions.filter {
+            competitions.filter {
                 query.isBlank() || it.competitionName.contains(query, true)
             }.forEach { competition ->
                 val item = layoutInflater.inflate(R.layout.item_manage_row, container, false)
@@ -828,16 +1015,22 @@ class ManageCompetitionsFragment : Fragment() {
                 }
                 item.findViewById<Button>(R.id.deleteButton).setOnClickListener {
                     confirmDelete {
-                        HabibiaDummyData.competitions.remove(competition)
-                        showMessage(getString(R.string.competition_deleted))
-                        render(query)
+                        apiInBackground({ HabibiaApi.delete("/competitions/${competition.competitionId}") }) {
+                            competitions = competitions.filter { it.competitionId != competition.competitionId }
+                            showMessage(getString(R.string.competition_deleted))
+                            render(query)
+                        }
                     }
                 }
                 container.addView(item)
             }
         }
         view.findViewById<TextInputEditText>(R.id.searchCompetitionsInput).addTextChangedListener(simpleWatcher { render(it) })
-        render("")
+        apiInBackground({ parseCompetitionList(HabibiaApi.get("/competitions")) }) { loaded ->
+            if (!isAdded) return@apiInBackground
+            competitions = loaded
+            render(view.findViewById<TextInputEditText>(R.id.searchCompetitionsInput).text?.toString().orEmpty())
+        }
     }
 }
 
@@ -847,15 +1040,19 @@ class AddEditCompetitionFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val existing = HabibiaDummyData.competitions.find { it.competitionId == HabibiaSession.editingCompetitionId }
+        val editingId = HabibiaSession.editingCompetitionId
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { goTo(ManageCompetitionsFragment()) }
-        if (existing != null) {
-            view.findViewById<TextInputEditText>(R.id.nameInput).setText(existing.competitionName)
-            view.findViewById<TextInputEditText>(R.id.dateInput).setText(existing.competitionDate)
-            view.findViewById<TextInputEditText>(R.id.deadlineInput).setText(existing.registrationDeadline)
-            view.findViewById<TextInputEditText>(R.id.venueInput).setText(existing.venue)
-            view.findViewById<TextInputEditText>(R.id.descriptionInput).setText(existing.description)
-            view.findViewById<TextInputEditText>(R.id.statusInput).setText(existing.status)
+        if (!editingId.isNullOrBlank()) {
+            apiInBackground({ parseCompetitionList(HabibiaApi.get("/competitions")) }) { competitions ->
+                if (!isAdded) return@apiInBackground
+                val existing = competitions.find { it.competitionId == editingId } ?: return@apiInBackground
+                view.findViewById<TextInputEditText>(R.id.nameInput).setText(existing.competitionName)
+                view.findViewById<TextInputEditText>(R.id.dateInput).setText(existing.competitionDate)
+                view.findViewById<TextInputEditText>(R.id.deadlineInput).setText(existing.registrationDeadline)
+                view.findViewById<TextInputEditText>(R.id.venueInput).setText(existing.venue)
+                view.findViewById<TextInputEditText>(R.id.descriptionInput).setText(existing.description)
+                view.findViewById<TextInputEditText>(R.id.statusInput).setText(existing.status)
+            }
         }
         view.findViewById<Button>(R.id.saveCompetitionButton).setOnClickListener {
             val name = view.findViewById<TextInputEditText>(R.id.nameInput).text?.toString().orEmpty()
@@ -863,28 +1060,30 @@ class AddEditCompetitionFragment : Fragment() {
                 showMessage("Competition name is required")
                 return@setOnClickListener
             }
-            if (existing != null) {
-                existing.competitionName = name
-                existing.competitionDate = view.findViewById<TextInputEditText>(R.id.dateInput).text?.toString().orEmpty()
-                existing.registrationDeadline = view.findViewById<TextInputEditText>(R.id.deadlineInput).text?.toString().orEmpty()
-                existing.venue = view.findViewById<TextInputEditText>(R.id.venueInput).text?.toString().orEmpty()
-                existing.description = view.findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString().orEmpty()
-                existing.status = view.findViewById<TextInputEditText>(R.id.statusInput).text?.toString().orEmpty().ifBlank { "UPCOMING" }
-            } else {
-                HabibiaDummyData.competitions.add(
-                    Competition(
-                        competitionId = "C${System.currentTimeMillis()}",
-                        competitionName = name,
-                        competitionDate = view.findViewById<TextInputEditText>(R.id.dateInput).text?.toString().orEmpty(),
-                        registrationDeadline = view.findViewById<TextInputEditText>(R.id.deadlineInput).text?.toString().orEmpty(),
-                        venue = view.findViewById<TextInputEditText>(R.id.venueInput).text?.toString().orEmpty(),
-                        description = view.findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString().orEmpty(),
-                        status = view.findViewById<TextInputEditText>(R.id.statusInput).text?.toString().orEmpty().ifBlank { "UPCOMING" }
-                    )
-                )
-            }
-            HabibiaSession.pendingSnackbar = getString(R.string.competition_saved)
-            goTo(ManageCompetitionsFragment())
+            val body = JSONObject()
+                .put("competitionName", name)
+                .put("competitionDate", view.findViewById<TextInputEditText>(R.id.dateInput).text?.toString().orEmpty())
+                .put("registrationDeadline", view.findViewById<TextInputEditText>(R.id.deadlineInput).text?.toString().orEmpty())
+                .put("venue", view.findViewById<TextInputEditText>(R.id.venueInput).text?.toString().orEmpty())
+                .put("description", view.findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString().orEmpty())
+                .put("status", view.findViewById<TextInputEditText>(R.id.statusInput).text?.toString().orEmpty().ifBlank { "UPCOMING" })
+                .toString()
+            val saveButton = view.findViewById<Button>(R.id.saveCompetitionButton)
+            saveButton.isEnabled = false
+            apiInBackground(
+                work = {
+                    if (editingId.isNullOrBlank()) HabibiaApi.post("/competitions", body)
+                    else HabibiaApi.put("/competitions/$editingId", body)
+                },
+                onError = { message ->
+                    saveButton.isEnabled = true
+                    showMessage(message)
+                },
+                onOk = {
+                    HabibiaSession.pendingSnackbar = getString(R.string.competition_saved)
+                    goTo(ManageCompetitionsFragment())
+                }
+            )
         }
     }
 }
@@ -902,9 +1101,10 @@ class ManageAnnouncementsFragment : Fragment() {
             goTo(AddEditAnnouncementFragment())
         }
         val container = view.findViewById<LinearLayout>(R.id.announcementsListContainer)
+        var announcements = emptyList<Announcement>()
         fun render() {
             container.removeAllViews()
-            HabibiaDummyData.announcements.forEach { announcement ->
+            announcements.forEach { announcement ->
                 val item = layoutInflater.inflate(R.layout.item_manage_row, container, false)
                 item.findViewById<TextView>(R.id.titleText).text = announcement.title
                 item.findViewById<TextView>(R.id.subtitleText).text = formatDisplayDate(announcement.datePosted)
@@ -914,15 +1114,21 @@ class ManageAnnouncementsFragment : Fragment() {
                 }
                 item.findViewById<Button>(R.id.deleteButton).setOnClickListener {
                     confirmDelete {
-                        HabibiaDummyData.announcements.remove(announcement)
-                        showMessage(getString(R.string.announcement_deleted))
-                        render()
+                        apiInBackground({ HabibiaApi.delete("/announcements/${announcement.announcementId}") }) {
+                            announcements = announcements.filter { it.announcementId != announcement.announcementId }
+                            showMessage(getString(R.string.announcement_deleted))
+                            render()
+                        }
                     }
                 }
                 container.addView(item)
             }
         }
-        render()
+        apiInBackground({ parseAnnouncementList(HabibiaApi.get("/announcements")) }) { loaded ->
+            if (!isAdded) return@apiInBackground
+            announcements = loaded
+            render()
+        }
     }
 }
 
@@ -932,12 +1138,16 @@ class AddEditAnnouncementFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val existing = HabibiaDummyData.announcements.find { it.announcementId == HabibiaSession.editingAnnouncementId }
+        val editingId = HabibiaSession.editingAnnouncementId
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { goTo(ManageAnnouncementsFragment()) }
-        if (existing != null) {
-            view.findViewById<TextInputEditText>(R.id.titleInput).setText(existing.title)
-            view.findViewById<TextInputEditText>(R.id.contentInput).setText(existing.content)
-            view.findViewById<TextInputEditText>(R.id.dateInput).setText(existing.datePosted)
+        if (!editingId.isNullOrBlank()) {
+            apiInBackground({ parseAnnouncementList(HabibiaApi.get("/announcements")) }) { announcements ->
+                if (!isAdded) return@apiInBackground
+                val existing = announcements.find { it.announcementId == editingId } ?: return@apiInBackground
+                view.findViewById<TextInputEditText>(R.id.titleInput).setText(existing.title)
+                view.findViewById<TextInputEditText>(R.id.contentInput).setText(existing.content)
+                view.findViewById<TextInputEditText>(R.id.dateInput).setText(existing.datePosted)
+            }
         }
         view.findViewById<Button>(R.id.saveAnnouncementButton).setOnClickListener {
             val title = view.findViewById<TextInputEditText>(R.id.titleInput).text?.toString().orEmpty()
@@ -945,22 +1155,28 @@ class AddEditAnnouncementFragment : Fragment() {
                 showMessage("Title is required")
                 return@setOnClickListener
             }
-            if (existing != null) {
-                existing.title = title
-                existing.content = view.findViewById<TextInputEditText>(R.id.contentInput).text?.toString().orEmpty()
-                existing.datePosted = view.findViewById<TextInputEditText>(R.id.dateInput).text?.toString().orEmpty()
-            } else {
-                HabibiaDummyData.announcements.add(
-                    Announcement(
-                        announcementId = "A${System.currentTimeMillis()}",
-                        title = title,
-                        content = view.findViewById<TextInputEditText>(R.id.contentInput).text?.toString().orEmpty(),
-                        datePosted = view.findViewById<TextInputEditText>(R.id.dateInput).text?.toString().orEmpty().ifBlank { "2026-09-12" }
-                    )
-                )
-            }
-            HabibiaSession.pendingSnackbar = getString(R.string.announcement_saved)
-            goTo(ManageAnnouncementsFragment())
+            val datePosted = view.findViewById<TextInputEditText>(R.id.dateInput).text?.toString().orEmpty()
+            val payload = JSONObject()
+                .put("title", title)
+                .put("content", view.findViewById<TextInputEditText>(R.id.contentInput).text?.toString().orEmpty())
+            if (datePosted.isNotBlank()) payload.put("datePosted", datePosted)
+            val body = payload.toString()
+            val saveButton = view.findViewById<Button>(R.id.saveAnnouncementButton)
+            saveButton.isEnabled = false
+            apiInBackground(
+                work = {
+                    if (editingId.isNullOrBlank()) HabibiaApi.post("/announcements", body)
+                    else HabibiaApi.put("/announcements/$editingId", body)
+                },
+                onError = { message ->
+                    saveButton.isEnabled = true
+                    showMessage(message)
+                },
+                onOk = {
+                    HabibiaSession.pendingSnackbar = getString(R.string.announcement_saved)
+                    goTo(ManageAnnouncementsFragment())
+                }
+            )
         }
     }
 }
@@ -978,9 +1194,10 @@ class ManageResourcesFragment : Fragment() {
             goTo(AddEditResourceFragment())
         }
         val container = view.findViewById<LinearLayout>(R.id.resourcesListContainer)
+        var resources = emptyList<BeginnerResource>()
         fun render(query: String) {
             container.removeAllViews()
-            HabibiaDummyData.resources.filter {
+            resources.filter {
                 query.isBlank() || it.title.contains(query, true) || it.category.contains(query, true)
             }.forEach { resource ->
                 val item = layoutInflater.inflate(R.layout.item_manage_row, container, false)
@@ -992,16 +1209,22 @@ class ManageResourcesFragment : Fragment() {
                 }
                 item.findViewById<Button>(R.id.deleteButton).setOnClickListener {
                     confirmDelete {
-                        HabibiaDummyData.resources.remove(resource)
-                        showMessage(getString(R.string.resource_deleted))
-                        render(query)
+                        apiInBackground({ HabibiaApi.delete("/resources/${resource.resourceId}") }) {
+                            resources = resources.filter { it.resourceId != resource.resourceId }
+                            showMessage(getString(R.string.resource_deleted))
+                            render(query)
+                        }
                     }
                 }
                 container.addView(item)
             }
         }
         view.findViewById<TextInputEditText>(R.id.searchResourcesInput).addTextChangedListener(simpleWatcher { render(it) })
-        render("")
+        apiInBackground({ parseResourceList(HabibiaApi.get("/resources")) }) { loaded ->
+            if (!isAdded) return@apiInBackground
+            resources = loaded
+            render(view.findViewById<TextInputEditText>(R.id.searchResourcesInput).text?.toString().orEmpty())
+        }
     }
 }
 
@@ -1011,13 +1234,17 @@ class AddEditResourceFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val existing = HabibiaDummyData.resources.find { it.resourceId == HabibiaSession.editingResourceId }
+        val editingId = HabibiaSession.editingResourceId
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { goTo(ManageResourcesFragment()) }
-        if (existing != null) {
-            view.findViewById<TextInputEditText>(R.id.titleInput).setText(existing.title)
-            view.findViewById<TextInputEditText>(R.id.categoryInput).setText(existing.category)
-            view.findViewById<TextInputEditText>(R.id.descriptionInput).setText(existing.description)
-            view.findViewById<TextInputEditText>(R.id.linkInput).setText(existing.resourceLink)
+        if (!editingId.isNullOrBlank()) {
+            apiInBackground({ parseResourceList(HabibiaApi.get("/resources")) }) { resources ->
+                if (!isAdded) return@apiInBackground
+                val existing = resources.find { it.resourceId == editingId } ?: return@apiInBackground
+                view.findViewById<TextInputEditText>(R.id.titleInput).setText(existing.title)
+                view.findViewById<TextInputEditText>(R.id.categoryInput).setText(existing.category)
+                view.findViewById<TextInputEditText>(R.id.descriptionInput).setText(existing.description)
+                view.findViewById<TextInputEditText>(R.id.linkInput).setText(existing.resourceLink)
+            }
         }
         view.findViewById<Button>(R.id.saveResourceButton).setOnClickListener {
             val title = view.findViewById<TextInputEditText>(R.id.titleInput).text?.toString().orEmpty()
@@ -1025,24 +1252,28 @@ class AddEditResourceFragment : Fragment() {
                 showMessage("Title is required")
                 return@setOnClickListener
             }
-            if (existing != null) {
-                existing.title = title
-                existing.category = view.findViewById<TextInputEditText>(R.id.categoryInput).text?.toString().orEmpty()
-                existing.description = view.findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString().orEmpty()
-                existing.resourceLink = view.findViewById<TextInputEditText>(R.id.linkInput).text?.toString().orEmpty()
-            } else {
-                HabibiaDummyData.resources.add(
-                    BeginnerResource(
-                        resourceId = "R${System.currentTimeMillis()}",
-                        title = title,
-                        category = view.findViewById<TextInputEditText>(R.id.categoryInput).text?.toString().orEmpty().ifBlank { "Getting Started" },
-                        description = view.findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString().orEmpty(),
-                        resourceLink = view.findViewById<TextInputEditText>(R.id.linkInput).text?.toString().orEmpty()
-                    )
-                )
-            }
-            HabibiaSession.pendingSnackbar = getString(R.string.resource_saved)
-            goTo(ManageResourcesFragment())
+            val body = JSONObject()
+                .put("title", title)
+                .put("category", view.findViewById<TextInputEditText>(R.id.categoryInput).text?.toString().orEmpty().ifBlank { "Getting Started" })
+                .put("description", view.findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString().orEmpty())
+                .put("resourceLink", view.findViewById<TextInputEditText>(R.id.linkInput).text?.toString().orEmpty())
+                .toString()
+            val saveButton = view.findViewById<Button>(R.id.saveResourceButton)
+            saveButton.isEnabled = false
+            apiInBackground(
+                work = {
+                    if (editingId.isNullOrBlank()) HabibiaApi.post("/resources", body)
+                    else HabibiaApi.put("/resources/$editingId", body)
+                },
+                onError = { message ->
+                    saveButton.isEnabled = true
+                    showMessage(message)
+                },
+                onOk = {
+                    HabibiaSession.pendingSnackbar = getString(R.string.resource_saved)
+                    goTo(ManageResourcesFragment())
+                }
+            )
         }
     }
 }
@@ -1054,12 +1285,146 @@ class AdminStatisticsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         view.findViewById<ImageButton>(R.id.backButton).setOnClickListener { goTo(AdminDashboardFragment()) }
-        view.findViewById<TextView>(R.id.membersStat).text = HabibiaDummyData.members.size.toString()
-        view.findViewById<TextView>(R.id.eventsStat).text = HabibiaDummyData.events.size.toString()
-        view.findViewById<TextView>(R.id.competitionsStat).text = HabibiaDummyData.competitions.size.toString()
-        view.findViewById<TextView>(R.id.scoresStat).text = HabibiaDummyData.scoreSessions.size.toString()
-        view.findViewById<TextView>(R.id.resourcesStat).text = HabibiaDummyData.resources.size.toString()
-        view.findViewById<TextView>(R.id.announcementsStat).text = HabibiaDummyData.announcements.size.toString()
+        apiInBackground({
+            val members = parseClubMembers(HabibiaApi.get("/admin/members")).size
+            val events = parseEventList(HabibiaApi.get("/events")).size
+            val competitions = parseCompetitionList(HabibiaApi.get("/competitions")).size
+            val resources = parseResourceList(HabibiaApi.get("/resources")).size
+            val announcements = parseAnnouncementList(HabibiaApi.get("/announcements")).size
+            listOf(members, events, competitions, resources, announcements)
+        }) { counts ->
+            if (!isAdded) return@apiInBackground
+            view.findViewById<TextView>(R.id.membersStat).text = counts[0].toString()
+            view.findViewById<TextView>(R.id.eventsStat).text = counts[1].toString()
+            view.findViewById<TextView>(R.id.competitionsStat).text = counts[2].toString()
+            view.findViewById<TextView>(R.id.resourcesStat).text = counts[3].toString()
+            view.findViewById<TextView>(R.id.announcementsStat).text = counts[4].toString()
+        }
+    }
+}
+
+private fun Fragment.applyAuthSuccess(json: String) {
+    val body = JSONObject(json)
+    val memberJson = body.optJSONObject("member") ?: JSONObject()
+    val member = parseClubMember(memberJson).let { parsed ->
+        if (parsed.role.isBlank()) parsed.copy(role = body.optString("role")) else parsed
+    }
+    HabibiaSession.authToken = body.optString("token").ifBlank { null }
+    HabibiaSession.loggedInMemberId = member.memberId.ifBlank { null }
+    HabibiaSession.pendingEmail = null
+    HabibiaSession.pendingPassword = null
+    HabibiaDummyData.member = member
+    when (body.optString("role")) {
+        "Admin" -> openAdminApp()
+        "Member" -> openMemberApp()
+        else -> showMessage("Unknown role")
+    }
+}
+
+private fun bindProfile(view: View, member: Member, profile: MemberProfile) {
+    view.findViewById<TextView>(R.id.profileName).text = member.fullName
+    view.findViewById<TextView>(R.id.memberSince).text = "Member since ${formatDisplayDate(member.dateJoined)}"
+    view.findViewById<TextView>(R.id.experienceText).text = "Experience Level: ${profile.experienceLevel}"
+    view.findViewById<TextView>(R.id.bowTypeText).text = "Bow Type: ${profile.bowType}"
+    view.findViewById<TextView>(R.id.divisionText).text = "Division: ${profile.division}"
+    view.findViewById<TextView>(R.id.emailText).text = "Email: ${member.email}"
+    view.findViewById<TextView>(R.id.emergencyText).text = "Emergency Contact: ${profile.emergencyContact}"
+}
+
+private fun parseClubMember(obj: JSONObject): Member = Member(
+    memberId = obj.optString("memberId"),
+    firstName = obj.optString("firstName"),
+    lastName = obj.optString("lastName"),
+    email = obj.optString("email"),
+    role = obj.optString("role"),
+    emailVerified = obj.optBoolean("emailVerified"),
+    dateJoined = obj.optString("dateJoined")
+)
+
+private fun parseClubMembers(json: String): List<Member> {
+    val array = JSONObject(json).optJSONArray("members") ?: JSONArray()
+    return (0 until array.length()).map { parseClubMember(array.getJSONObject(it)) }
+}
+
+private fun parseMemberProfile(obj: JSONObject): MemberProfile = MemberProfile(
+    profileId = obj.optString("profileId"),
+    memberId = obj.optString("memberId"),
+    experienceLevel = obj.optString("experienceLevel"),
+    bowType = obj.optString("bowType"),
+    division = obj.optString("division"),
+    emergencyContact = obj.optString("emergencyContact")
+)
+
+private fun parseEventList(json: String): List<ClubEvent> {
+    val array = JSONObject(json).optJSONArray("events") ?: JSONArray()
+    return (0 until array.length()).map { i ->
+        val obj = array.getJSONObject(i)
+        ClubEvent(
+            eventId = obj.optString("eventId"),
+            title = obj.optString("title"),
+            description = obj.optString("description"),
+            eventDate = obj.optString("eventDate"),
+            eventTime = obj.optString("eventTime"),
+            location = obj.optString("location"),
+            type = obj.optString("type").ifBlank { "Event" }
+        )
+    }
+}
+
+private fun parseCompetitionList(json: String): List<Competition> {
+    val array = JSONObject(json).optJSONArray("competitions") ?: JSONArray()
+    return (0 until array.length()).map { i ->
+        val obj = array.getJSONObject(i)
+        Competition(
+            competitionId = obj.optString("competitionId"),
+            competitionName = obj.optString("competitionName"),
+            competitionDate = obj.optString("competitionDate"),
+            registrationDeadline = obj.optString("registrationDeadline"),
+            venue = obj.optString("venue"),
+            description = obj.optString("description"),
+            status = obj.optString("status").ifBlank { "UPCOMING" }
+        )
+    }
+}
+
+private fun parseAnnouncementList(json: String): List<Announcement> {
+    val array = JSONObject(json).optJSONArray("announcements") ?: JSONArray()
+    return (0 until array.length()).map { i ->
+        val obj = array.getJSONObject(i)
+        Announcement(
+            announcementId = obj.optString("announcementId"),
+            title = obj.optString("title"),
+            content = obj.optString("content"),
+            datePosted = obj.optString("datePosted")
+        )
+    }
+}
+
+private fun parseNotificationList(json: String): List<Notification> {
+    val array = JSONObject(json).optJSONArray("notifications") ?: JSONArray()
+    return (0 until array.length()).map { i ->
+        val obj = array.getJSONObject(i)
+        Notification(
+            notificationId = obj.optString("notificationId"),
+            title = obj.optString("title"),
+            message = obj.optString("message"),
+            dateSent = obj.optString("dateSent"),
+            isRead = obj.optBoolean("isRead")
+        )
+    }
+}
+
+private fun parseResourceList(json: String): List<BeginnerResource> {
+    val array = JSONObject(json).optJSONArray("resources") ?: JSONArray()
+    return (0 until array.length()).map { i ->
+        val obj = array.getJSONObject(i)
+        BeginnerResource(
+            resourceId = obj.optString("resourceId"),
+            title = obj.optString("title"),
+            category = obj.optString("category"),
+            description = obj.optString("description"),
+            resourceLink = obj.optString("resourceLink")
+        )
     }
 }
 

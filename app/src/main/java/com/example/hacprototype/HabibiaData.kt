@@ -162,6 +162,19 @@ object HabibiaSession {
     var progressType: SessionType = SessionType.PRACTICE
     var draftSession: ScoreSession? = null
     var currentEndArrows: MutableList<ArrowScore> = mutableListOf()
+    var pendingEmail: String? = null
+    var pendingPassword: String? = null
+
+    fun clearAuth() {
+        authToken = null
+        loggedInMemberId = null
+        isAdmin = false
+        selectedMemberId = null
+        draftSession = null
+        currentEndArrows.clear()
+        pendingEmail = null
+        pendingPassword = null
+    }
 }
 
 object HabibiaDummyData {
