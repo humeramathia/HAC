@@ -28,7 +28,7 @@ If a field is not in `firebase/SCHEMA.md`, do not add it in Python or Kotlin unt
 ## Base URL
 
 Local emulator: `http://10.0.2.2:8000`  
-Hosted: the Render HTTPS URL, set in `HabibiaApi.HOSTED_URL`
+Hosted: `https://habibia-api-2riv.onrender.com` (set in `HabibiaApi.HOSTED_URL`)
 
 ### Host on Render (no local uvicorn)
 

@@ -14,8 +14,7 @@ import java.nio.charset.StandardCharsets
 class HabibiaApiException(val statusCode: Int, message: String) : Exception(message)
 
 object HabibiaApi {
-    // After Render is live, paste the https://….onrender.com URL here (no trailing slash).
-    private const val HOSTED_URL = ""
+    private const val HOSTED_URL = "https://habibia-api-2riv.onrender.com"
     private const val LOCAL_EMULATOR_URL = "http://10.0.2.2:8000"
 
     val BASE_URL: String
