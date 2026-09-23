@@ -4,6 +4,8 @@ Android club app for [Habibia Archery Club](https://haclub.co.za/). Members sign
 
 This is an academic team project. The Android UI talks only to a Python API. The API is the only process that reads or writes Cloud Firestore.
 
+**Presentation:** [https://youtu.be/tm-dFHZ1HUg](https://youtu.be/tm-dFHZ1HUg)
+
 ---
 
 ## Contents
