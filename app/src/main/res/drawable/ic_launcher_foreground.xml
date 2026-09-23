@@ -1,3 +1,7 @@
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Adaptive-icon foreground artwork for the launcher. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
@@ -28,3 +32,6 @@
         android:strokeWidth="1"
         android:strokeColor="#00000000" />
 </vector>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

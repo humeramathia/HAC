@@ -1,3 +1,11 @@
+// ========================================
+// START OF CODE
+// ========================================
+
+// Defense in depth if a client uses the Firestore SDK directly.
+// The Android app talks to FastAPI (Admin SDK bypasses these rules).
+// Admin is not a custom claim: it is members/{uid}.role == "Admin".
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -49,6 +57,8 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Create checks request.resource (incoming memberId) so a member cannot
+    // write a session owned by someone else. Read/update use the stored owner.
     match /scoreSessions/{id} {
       allow read: if signedIn() && (isOwner(resource.data.memberId) || isAdmin());
       allow create: if signedIn() && isOwner(request.resource.data.memberId);
@@ -61,3 +71,7 @@ service cloud.firestore {
     }
   }
 }
+
+// ========================================
+// END OF CODE
+// ========================================

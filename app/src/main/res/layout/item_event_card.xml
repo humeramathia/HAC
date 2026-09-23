@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Calendar event card with type, title, date, time, and location. -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/eventCard"
     android:layout_width="match_parent"
@@ -53,3 +57,6 @@
             android:text="Habibia Archery Club" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

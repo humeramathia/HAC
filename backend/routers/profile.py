@@ -1,3 +1,14 @@
+# ========================================
+# START OF CODE
+# ========================================
+
+"""Signed-in member identity (`members`) and archery profile (`memberProfiles`).
+
+Name/email live on the members document because login and admin lists need
+them. Bow type, division, and emergency contact are a separate profile
+document so scoring and calendar queries do not carry those fields.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException
 from firebase_admin import auth as fb_auth
 from pydantic import BaseModel
@@ -20,17 +31,20 @@ class ProfileUpdateBody(BaseModel):
 
 @router.get("/me")
 def get_me(user: CurrentUser = Depends(get_current_user)):
+    """Return the members row already loaded during token verification."""
     return user.member
 
 
 @router.get("/me/profile")
 def get_profile(user: CurrentUser = Depends(get_current_user)):
+    """Return archery fields; empty defaults if the profile doc is missing."""
     snap = get_db().collection("memberProfiles").document(user.uid).get()
     return profile_payload(user.uid, snap.to_dict() if snap.exists else {})
 
 
 @router.put("/me/profile")
 def update_profile(body: ProfileUpdateBody, user: CurrentUser = Depends(get_current_user)):
+    """Write both documents. If email changed, update Auth so login stays in sync."""
     db = get_db()
     db.collection("members").document(user.uid).update(
         {
@@ -60,3 +74,7 @@ def update_profile(body: ProfileUpdateBody, user: CurrentUser = Depends(get_curr
         "member": member_payload(user.uid, member_snap.to_dict()),
         "profile": profile_payload(user.uid, profile_snap.to_dict()),
     }
+
+# ========================================
+# END OF CODE
+# ========================================

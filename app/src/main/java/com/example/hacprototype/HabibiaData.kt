@@ -1,5 +1,10 @@
+// ========================================
+// START OF CODE
+// ========================================
+
 package com.example.hacprototype
 
+/** Club member identity returned by auth and admin member endpoints. */
 data class Member(
     val memberId: String,
     var firstName: String,
@@ -12,6 +17,7 @@ data class Member(
     val fullName: String get() = "$firstName $lastName"
 }
 
+/** Archery profile fields stored separately from the member account. */
 data class MemberProfile(
     val profileId: String,
     val memberId: String,
@@ -21,6 +27,7 @@ data class MemberProfile(
     var emergencyContact: String
 )
 
+/** Practice or social event shown on the club calendar. */
 data class ClubEvent(
     val eventId: String,
     var title: String,
@@ -31,6 +38,7 @@ data class ClubEvent(
     var type: String = "Event"
 )
 
+/** Registered competition with a deadline and venue. */
 data class Competition(
     val competitionId: String,
     var competitionName: String,
@@ -41,6 +49,10 @@ data class Competition(
     var status: String = "UPCOMING"
 )
 
+/**
+ * Flattened session total used by older score lists.
+ * Prefer [ScoreSession] for end-by-end detail.
+ */
 data class Score(
     val scoreId: String,
     val memberId: String,
@@ -50,8 +62,13 @@ data class Score(
     var notes: String
 )
 
+/** Practice is free-form; league uses [LeagueStandard] arrow counts. */
 enum class SessionType { PRACTICE, LEAGUE }
 
+/**
+ * One arrow on a target face.
+ * An X is worth 10 but is counted separately from a plain 10 for stats.
+ */
 data class ArrowScore(
     val value: Int,
     val isX: Boolean = false
@@ -59,6 +76,7 @@ data class ArrowScore(
     val label: String get() = if (isX) "X" else value.toString()
 }
 
+/** One end (round) of arrows inside a [ScoreSession]. */
 data class ScoreEnd(
     val endNumber: Int,
     val arrows: MutableList<ArrowScore> = mutableListOf()
@@ -67,6 +85,12 @@ data class ScoreEnd(
     fun arrowLabels(): String = arrows.joinToString("  |  ") { it.label }
 }
 
+/**
+ * Practice or league scoring session with derived totals.
+ *
+ * [maxScore] assumes a 10-ring face. League ranking fields are optional and
+ * only posted when the session type is [SessionType.LEAGUE].
+ */
 data class ScoreSession(
     val sessionId: String,
     val memberId: String,
@@ -111,6 +135,7 @@ data class ScoreSession(
     )
 }
 
+/** Indoor league defaults: 60 arrows, 6 per end (10 ends). */
 object LeagueStandard {
     const val TOTAL_ARROWS = 60
     const val ARROWS_PER_END = 6
@@ -125,6 +150,7 @@ data class Announcement(
     var datePosted: String
 )
 
+/** Inbox item; unread state drives the home notification dot. */
 data class Notification(
     val notificationId: String,
     var title: String,
@@ -133,6 +159,7 @@ data class Notification(
     var isRead: Boolean
 )
 
+/** Coaching article shown on the beginner resources tab. */
 data class BeginnerResource(
     val resourceId: String,
     var title: String,
@@ -141,6 +168,11 @@ data class BeginnerResource(
     var resourceLink: String
 )
 
+/**
+ * Process-wide UI and auth state. Not persisted, so process death returns
+ * the user to login. Selection IDs let detail screens survive fragment
+ * replacement without argument bundles.
+ */
 object HabibiaSession {
     var authToken: String? = null
     var loggedInMemberId: String? = null
@@ -165,6 +197,7 @@ object HabibiaSession {
     var pendingEmail: String? = null
     var pendingPassword: String? = null
 
+    /** Drops the Firebase token and in-progress score draft after logout. */
     fun clearAuth() {
         authToken = null
         loggedInMemberId = null
@@ -177,6 +210,13 @@ object HabibiaSession {
     }
 }
 
+/**
+ * Leftover in-memory sample data for home tiles and Demo Admin.
+ *
+ * Live screens (calendar, scores, admin lists) load from the API. The member
+ * home featured event, featured scores, and greeting still read from here.
+ * Demo Admin skips login and lands on the admin dashboard without a token.
+ */
 object HabibiaDummyData {
     var member = Member(
         memberId = "M001",
@@ -503,6 +543,7 @@ object HabibiaDummyData {
     fun nextEvent(): ClubEvent? = events.minByOrNull { it.eventDate }
     fun nextCompetition(): Competition? = competitions.minByOrNull { it.competitionDate }
 
+    /** Admin preview target, otherwise the leftover dummy member (`M001`). */
     fun viewingMemberId(): String =
         if (HabibiaSession.isAdmin) {
             HabibiaSession.selectedMemberId ?: member.memberId
@@ -547,6 +588,7 @@ object HabibiaDummyData {
         scores.add(0, session.toScore())
     }
 
+    /** Percent change from the oldest session of [type] to the newest. */
     fun sessionImprovement(type: SessionType, memberId: String = viewingMemberId()): Double {
         val ordered = sessionsFor(memberId).filter { it.type == type }.sortedBy { it.date }
         if (ordered.size < 2) return 0.0
@@ -568,6 +610,7 @@ object HabibiaDummyData {
     }
 }
 
+/** Maps keypad tokens; `X` is 10 with [ArrowScore.isX] set. */
 private fun parseArrow(token: String): ArrowScore {
     return if (token.equals("X", ignoreCase = true)) ArrowScore(10, true)
     else ArrowScore(token.toInt(), false)
@@ -606,3 +649,8 @@ private fun buildSession(
         leagueName = leagueName
     )
 }
+
+// ========================================
+// END OF CODE
+// ========================================
+

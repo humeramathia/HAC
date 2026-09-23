@@ -1,3 +1,7 @@
+// ========================================
+// START OF CODE
+// ========================================
+
 package com.example.hacprototype
 
 import android.graphics.Color
@@ -21,12 +25,19 @@ import com.google.android.material.textfield.TextInputLayout
 import org.json.JSONArray
 import org.json.JSONObject
 
+/** Branded splash; [MainActivity] replaces it with login after a short delay. */
 class SplashFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_splash, container, false)
     }
 }
 
+/**
+ * Email/password sign-in against `/auth/login`.
+ *
+ * Demo Member uses the seeded API account. Demo Admin skips login on purpose
+ * and opens the admin dashboard without a Firebase token.
+ */
 class LoginFragment : Fragment() {
     private var passwordVisible = false
 
@@ -78,6 +89,7 @@ class LoginFragment : Fragment() {
         view.findViewById<View>(R.id.demoMemberButton).setOnClickListener {
             signInThenOpen("member@habibia.co.za", "Member123")
         }
+        // Intentionally no API call — Demo Admin is a local shortcut.
         view.findViewById<View>(R.id.demoAdminButton).setOnClickListener { openAdminApp() }
     }
 
@@ -113,6 +125,7 @@ class LoginFragment : Fragment() {
     }
 }
 
+/** Posts `/auth/register` then holds credentials for the verification screen. */
 class RegisterFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_register, container, false)
@@ -168,6 +181,10 @@ class RegisterFragment : Fragment() {
     }
 }
 
+/**
+ * After register or unverified login: resend the Firebase email, then confirm
+ * via `/auth/confirm-verification` once the user has clicked the mail link.
+ */
 class EmailVerificationFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_email_verification, container, false)
@@ -237,6 +254,7 @@ class EmailVerificationFragment : Fragment() {
     }
 }
 
+/** Member shell: bottom nav plus a child fragment for the selected tab. */
 class MemberHostFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_member_host, container, false)
@@ -268,6 +286,12 @@ class MemberHostFragment : Fragment() {
     }
 }
 
+/**
+ * Member home.
+ *
+ * Featured event and score tiles still use leftover [HabibiaDummyData].
+ * The unread notification dot is loaded from `/notifications`.
+ */
 class MemberDashboardFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_member_dashboard, container, false)
@@ -279,6 +303,7 @@ class MemberDashboardFragment : Fragment() {
             "${HabibiaDummyData.greeting()}, ${member.firstName}"
 
         view.findViewById<View>(R.id.notificationDot).visibility = View.GONE
+        // Trailing lambda is onOk (see [apiInBackground]); unread state is live API data.
         apiInBackground({ parseNotificationList(HabibiaApi.get("/notifications")) }) { notifications ->
             if (!isAdded) return@apiInBackground
             view.findViewById<View>(R.id.notificationDot).visibility =
@@ -352,6 +377,7 @@ class MemberDashboardFragment : Fragment() {
     }
 }
 
+/** Combined event and competition list from the API, filtered by type chips. */
 class ClubCalendarFragment : Fragment() {
     private var filter = "All"
     private var query = ""
@@ -446,6 +472,7 @@ class ClubCalendarFragment : Fragment() {
     }
 }
 
+/** Detail for [HabibiaSession.selectedEventId]; falls back to the first event. */
 class EventDetailsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_event_details, container, false)
@@ -469,6 +496,7 @@ class EventDetailsFragment : Fragment() {
     }
 }
 
+/** Member competition list loaded from `/competitions`. */
 class CompetitionFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_competition, container, false)
@@ -513,6 +541,7 @@ class CompetitionFragment : Fragment() {
     }
 }
 
+/** Competition detail; back returns to admin manage or the member list. */
 class CompetitionDetailsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_competition_details, container, false)
@@ -542,6 +571,7 @@ class CompetitionDetailsFragment : Fragment() {
     }
 }
 
+/** Read-only club announcements (edit/delete hidden; those live in admin). */
 class AnnouncementFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_announcement, container, false)
@@ -570,6 +600,7 @@ class AnnouncementFragment : Fragment() {
     }
 }
 
+/** Inbox from `/notifications`; tapping an unread row marks it read on the API. */
 class NotificationFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_notification, container, false)
@@ -619,6 +650,7 @@ class NotificationFragment : Fragment() {
     }
 }
 
+/** Beginner resources from `/resources`, filtered by category chip. */
 class BeginnerResourcesFragment : Fragment() {
     private var category = "All"
     private var query = ""
@@ -676,6 +708,7 @@ class BeginnerResourcesFragment : Fragment() {
     }
 }
 
+/** One resource; the open-link action is a toast, not an external browser. */
 class ResourceDetailsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_resource_details, container, false)
@@ -697,6 +730,10 @@ class ResourceDetailsFragment : Fragment() {
     }
 }
 
+/**
+ * Signed-in profile. Dummy values paint first so the screen is not blank
+ * while `/me` and `/me/profile` load.
+ */
 class ProfileFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_profile, container, false)
@@ -734,6 +771,7 @@ class ProfileFragment : Fragment() {
     }
 }
 
+/** PUT `/me/profile` then queues a snackbar for the profile tab. */
 class EditProfileFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_edit_profile, container, false)
@@ -790,6 +828,7 @@ class EditProfileFragment : Fragment() {
     }
 }
 
+/** Admin home: live counts plus shortcuts. Demo Admin lands here without auth. */
 class AdminDashboardFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_admin_dashboard, container, false)
@@ -833,6 +872,7 @@ class AdminDashboardFragment : Fragment() {
     }
 }
 
+/** Admin member list. Admin accounts cannot be deleted or opened for scores. */
 class ManageMembersFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_manage_members, container, false)
@@ -884,6 +924,7 @@ class ManageMembersFragment : Fragment() {
     }
 }
 
+/** Admin event list; null [HabibiaSession.editingEventId] means create. */
 class ManageEventsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_manage_events, container, false)
@@ -932,6 +973,7 @@ class ManageEventsFragment : Fragment() {
     }
 }
 
+/** Create (`POST /events`) or update (`PUT /events/{id}`) from session edit id. */
 class AddEditEventFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_add_edit_event, container, false)
@@ -986,6 +1028,7 @@ class AddEditEventFragment : Fragment() {
     }
 }
 
+/** Admin competition list. */
 class ManageCompetitionsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_manage_competitions, container, false)
@@ -1034,6 +1077,7 @@ class ManageCompetitionsFragment : Fragment() {
     }
 }
 
+/** Create or update a competition; blank status defaults to UPCOMING. */
 class AddEditCompetitionFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_add_edit_competition, container, false)
@@ -1088,6 +1132,7 @@ class AddEditCompetitionFragment : Fragment() {
     }
 }
 
+/** Admin announcement list. */
 class ManageAnnouncementsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_manage_announcements, container, false)
@@ -1132,6 +1177,7 @@ class ManageAnnouncementsFragment : Fragment() {
     }
 }
 
+/** Create or update an announcement; date is omitted when blank so the API sets it. */
 class AddEditAnnouncementFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_add_edit_announcement, container, false)
@@ -1181,6 +1227,7 @@ class AddEditAnnouncementFragment : Fragment() {
     }
 }
 
+/** Admin beginner-resource list. */
 class ManageResourcesFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_manage_resources, container, false)
@@ -1228,6 +1275,7 @@ class ManageResourcesFragment : Fragment() {
     }
 }
 
+/** Create or update a resource; blank category becomes Getting Started. */
 class AddEditResourceFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_add_edit_resource, container, false)
@@ -1278,6 +1326,7 @@ class AddEditResourceFragment : Fragment() {
     }
 }
 
+/** Club-wide counts from several list endpoints, not a dedicated stats API. */
 class AdminStatisticsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_admin_statistics, container, false)
@@ -1303,6 +1352,11 @@ class AdminStatisticsFragment : Fragment() {
     }
 }
 
+/**
+ * Stores the Firebase ID token from `/auth/login` or confirm-verification,
+ * copies the member into leftover dummy state for home tiles, and routes
+ * by `role` (Admin vs Member).
+ */
 private fun Fragment.applyAuthSuccess(json: String) {
     val body = JSONObject(json)
     val memberJson = body.optJSONObject("member") ?: JSONObject()
@@ -1427,4 +1481,9 @@ private fun parseResourceList(json: String): List<BeginnerResource> {
         )
     }
 }
+
+// ========================================
+// END OF CODE
+// ========================================
+
 

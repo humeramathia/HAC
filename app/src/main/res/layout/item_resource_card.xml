@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Resource list card with category, title, and short description. -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/resourceCard"
     android:layout_width="match_parent"
@@ -56,3 +60,6 @@
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

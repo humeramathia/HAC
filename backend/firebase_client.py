@@ -1,4 +1,14 @@
-"""Firebase Admin + Firestore. Local file or FIREBASE_SERVICE_ACCOUNT env var."""
+# ========================================
+# START OF CODE
+# ========================================
+
+"""Firebase Admin + Firestore initialisation.
+
+Accepts credentials as inline JSON (Render env var) or as a file path
+(local `firebase/serviceAccount.json`, or a Render secret file). JSON is
+detected by a leading `{` so a pasted service-account object is never
+treated as a filename.
+"""
 
 from __future__ import annotations
 
@@ -16,6 +26,7 @@ _SERVICE_ACCOUNT_CANDIDATES = [
     if os.getenv("FIREBASE_SERVICE_ACCOUNT_FILE", "").strip()
     else None,
     _PROJECT_DIR / "firebase" / "serviceAccount.json",
+    # Browsers sometimes save the download as serviceAccount.json.json.
     _PROJECT_DIR / "firebase" / "serviceAccount.json.json",
     Path("/etc/secrets/serviceAccount.json"),
 ]
@@ -24,6 +35,7 @@ db = None
 
 
 def _clean_env(raw: str) -> str:
+    """Strip BOM/quotes that hosting dashboards wrap around pasted JSON."""
     cleaned = raw.strip().lstrip("\ufeff")
     if len(cleaned) >= 2 and cleaned[0] == cleaned[-1] and cleaned[0] in {"'", '"'}:
         inner = cleaned[1:-1].strip()
@@ -33,6 +45,12 @@ def _clean_env(raw: str) -> str:
 
 
 def _repair_account(data: dict) -> dict:
+    """Fix Render-mangled URLs: `https:/` (one slash) is not a valid issuer/client URL.
+
+    Some env-var UIs collapse `https://` to `https:/`. Firebase then rejects
+    the certificate. Only rewrite values that are already broken so a correct
+    `https://` token_uri / auth_uri is left alone.
+    """
     for key, value in list(data.items()):
         if isinstance(value, str) and value.startswith("https:/") and not value.startswith("https://"):
             data[key] = "https://" + value[len("https:/") :]
@@ -40,6 +58,11 @@ def _repair_account(data: dict) -> dict:
 
 
 def _account_from_text(raw: str) -> dict | None:
+    """Parse FIREBASE_SERVICE_ACCOUNT as JSON, or as a path only when it is not JSON.
+
+    A leading `{` means inline JSON — never open that string as a file.
+    Short non-JSON values may be a path to the downloaded key file.
+    """
     cleaned = _clean_env(raw)
     if not cleaned:
         return None
@@ -65,6 +88,7 @@ def _account_from_text(raw: str) -> dict | None:
 
 
 def _credential() -> credentials.Base:
+    """Prefer the env-var JSON, then fall back to known file locations."""
     raw = os.getenv("FIREBASE_SERVICE_ACCOUNT", "")
     parsed = _account_from_text(raw) if raw.strip() else None
     if parsed:
@@ -79,6 +103,7 @@ def _credential() -> credentials.Base:
 
 
 def init_firebase():
+    """Create the Admin app once; reuse it if uvicorn reloads the module."""
     global db
     if firebase_admin._apps:
         db = firestore.client()
@@ -89,6 +114,11 @@ def init_firebase():
 
 
 def get_db():
+    """Lazy-init helper so routers can import `get_db` before startup finishes."""
     if db is None:
         init_firebase()
     return db
+
+# ========================================
+# END OF CODE
+# ========================================

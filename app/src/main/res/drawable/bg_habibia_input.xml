@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Green-to-blue bordered field background. -->
 <!-- Refined 2dp green → blue border, ~26dp corners -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
@@ -22,3 +26,6 @@
         </shape>
     </item>
 </layer-list>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

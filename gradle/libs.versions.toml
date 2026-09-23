@@ -1,3 +1,7 @@
+# ========================================
+# START OF CODE
+# ========================================
+# Version catalog for Gradle plugins and library coordinates.
 [versions]
 agp = "9.0.1"
 coreKtx = "1.17.0"
@@ -21,4 +25,7 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+# ========================================
+# END OF CODE
+# ========================================
 

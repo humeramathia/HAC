@@ -1,3 +1,6 @@
+// ========================================
+// START OF CODE
+// ========================================
 
 package com.example.hacprototype
 
@@ -11,6 +14,13 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 
+/**
+ * Single-activity host for the Habibia prototype.
+ *
+ * Every screen is a fragment swapped into [R.id.fragmentContainer]. The activity
+ * does not use the fragment back stack; [OnBackPressedCallback] encodes the
+ * role-aware exits instead.
+ */
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +50,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        // Splash only on a fresh launch so rotation does not replay the delay.
         if (savedInstanceState == null) {
             navigateTo(SplashFragment())
             Handler(Looper.getMainLooper()).postDelayed({
@@ -48,6 +59,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Replaces the current screen. Transactions are not added to the back stack
+     * because back is handled explicitly above.
+     */
     fun navigateTo(fragment: Fragment) {
         supportFragmentManager
             .beginTransaction()
@@ -55,3 +70,7 @@ class MainActivity : AppCompatActivity() {
             .commit()
     }
 }
+
+// ========================================
+// END OF CODE
+// ========================================

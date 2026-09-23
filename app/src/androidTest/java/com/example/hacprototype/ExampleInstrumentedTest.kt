@@ -1,3 +1,7 @@
+// ========================================
+// START OF CODE
+// ========================================
+
 package com.example.hacprototype
 
 import androidx.test.platform.app.InstrumentationRegistry
@@ -22,3 +26,7 @@ class ExampleInstrumentedTest {
         assertEquals("com.example.hacprototype", appContext.packageName)
     }
 }
+
+// ========================================
+// END OF CODE
+// ========================================

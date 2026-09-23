@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Bottom navigation items for Home, Calendar, Scores, Resources, and Profile. -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/navHome"
@@ -21,3 +25,6 @@
         android:icon="@drawable/ic_nav_profile"
         android:title="@string/nav_profile" />
 </menu>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

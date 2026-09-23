@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Charcoal-to-green gradient for featured event tiles. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <gradient
         android:angle="135"
@@ -8,3 +12,6 @@
         android:type="linear" />
     <corners android:radius="@dimen/radius_md" />
 </shape>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

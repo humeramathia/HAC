@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Selected/unselected colours for member bottom nav. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:color="@color/habibia_nav_selected" android:state_checked="true" />
     <item android:color="@color/habibia_nav_unselected" />
 </selector>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

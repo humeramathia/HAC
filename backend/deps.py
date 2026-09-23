@@ -1,3 +1,14 @@
+# ========================================
+# START OF CODE
+# ========================================
+
+"""Shared FastAPI dependencies: JWT verification and role checks.
+
+Identity comes from a Firebase ID token. Club role comes from the
+`members` document, not custom claims, so an admin promotion in Firestore
+takes effect on the next authenticated request without minting a new token.
+"""
+
 from __future__ import annotations
 
 from typing import Annotated, Any
@@ -8,10 +19,13 @@ from firebase_admin import auth as fb_auth
 
 from firebase_client import get_db
 
+# auto_error=False so missing headers become our 401, not FastAPI's default 403.
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
 class CurrentUser:
+    """Authenticated caller plus the Firestore member snapshot used by routers."""
+
     def __init__(self, uid: str, role: str, member: dict[str, Any]):
         self.uid = uid
         self.role = role
@@ -23,6 +37,7 @@ class CurrentUser:
 
 
 def member_payload(uid: str, data: dict[str, Any] | None) -> dict[str, Any]:
+    """Normalise a members document so clients always see the same keys."""
     data = data or {}
     return {
         "memberId": uid,
@@ -36,6 +51,7 @@ def member_payload(uid: str, data: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def profile_payload(uid: str, data: dict[str, Any] | None) -> dict[str, Any]:
+    """Normalise a memberProfiles document (archery fields, not login identity)."""
     data = data or {}
     return {
         "profileId": uid,
@@ -50,6 +66,12 @@ def profile_payload(uid: str, data: dict[str, Any] | None) -> dict[str, Any]:
 def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)] = None,
 ) -> CurrentUser:
+    """Verify the Bearer JWT and load the matching members row.
+
+    `verify_id_token` checks signature and expiry. A valid token is not
+    enough on its own: the UID must still have a members document, otherwise
+    a deleted or half-registered Auth user cannot call club endpoints.
+    """
     if credentials is None or not credentials.credentials:
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
     token = credentials.credentials.strip()
@@ -70,6 +92,11 @@ def get_current_user(
 
 
 def require_admin(user: Annotated[CurrentUser, Depends(get_current_user)]) -> CurrentUser:
+    """Reject non-admin callers after token verification has already succeeded."""
     if not user.is_admin:
         raise HTTPException(status_code=403, detail="Admin only")
     return user
+
+# ========================================
+# END OF CODE
+# ========================================

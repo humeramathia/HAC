@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Circular avatar frame with a green ring. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
     <solid android:color="@color/habibia_surface_alt" />
     <stroke android:width="2dp" android:color="@color/habibia_green" />
 </shape>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

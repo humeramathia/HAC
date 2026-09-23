@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Competition list card with status, date, venue, and deadline. -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/competitionCard"
     style="@style/Widget.Habibia.Card"
@@ -55,3 +59,6 @@
             android:text="Deadline: 1 September 2026" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

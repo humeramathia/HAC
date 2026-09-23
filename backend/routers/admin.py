@@ -1,3 +1,17 @@
+# ========================================
+# START OF CODE
+# ========================================
+
+"""Admin member list, per-member scores/progress, and member delete.
+
+Delete is a cascade: scoreSessions and notifications that belong to the
+UID are removed first, then memberProfiles and members, then the Firebase
+Auth user. Leaving sessions behind would keep orphaned scores on admin
+graphs; leaving Auth behind would let the same email sign in with no
+members row. Self-delete is blocked so the last admin cannot lock the club
+out of this API.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from firebase_admin import auth as fb_auth
 
@@ -73,6 +87,13 @@ def member_progress(
 
 @router.delete("/members/{member_id}")
 def delete_member(member_id: str, user: CurrentUser = Depends(require_admin)):
+    """Remove a member and every document keyed by their UID.
+
+    Cascades `scoreSessions` and `notifications` (both store `memberId`),
+    then the profile and members docs. Auth delete is best-effort: if it
+    fails after Firestore is cleaned, the caller still gets ok because the
+    club data is already gone.
+    """
     if member_id == user.uid:
         raise HTTPException(status_code=400, detail="You cannot delete your own admin account")
     db = get_db()
@@ -91,3 +112,7 @@ def delete_member(member_id: str, user: CurrentUser = Depends(require_admin)):
     except Exception:
         pass
     return {"ok": True}
+
+# ========================================
+# END OF CODE
+# ========================================

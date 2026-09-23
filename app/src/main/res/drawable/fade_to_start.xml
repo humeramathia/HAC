@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Fade overlay that blends content into the leading edge. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <gradient
         android:angle="180"
@@ -6,3 +10,6 @@
         android:endColor="#FFFAFBFC"
         android:type="linear" />
 </shape>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

@@ -1,3 +1,7 @@
+// ========================================
+// START OF CODE
+// ========================================
+
 package com.example.hacprototype
 
 import android.app.AlertDialog
@@ -14,10 +18,15 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.android.material.snackbar.Snackbar
 
+/** Replaces the activity host with [fragment] via [MainActivity.navigateTo]. */
 fun Fragment.goTo(fragment: Fragment) {
     (activity as? MainActivity)?.navigateTo(fragment)
 }
 
+/**
+ * Opens the member shell on [tabId] and clears admin viewing state so a
+ * previous admin "view this member" selection cannot leak into member screens.
+ */
 fun Fragment.openMemberApp(tabId: Int = R.id.navHome) {
     HabibiaSession.selectedMemberTab = tabId
     HabibiaSession.isAdmin = false
@@ -35,6 +44,10 @@ fun Fragment.showMessage(message: String) {
     Snackbar.make(root, message, Snackbar.LENGTH_SHORT).show()
 }
 
+/**
+ * Shows a snackbar queued before a navigation (save/delete) so the message
+ * appears on the destination screen instead of the one that is leaving.
+ */
 fun Fragment.consumePendingMessage() {
     HabibiaSession.pendingSnackbar?.let {
         showMessage(it)
@@ -117,3 +130,7 @@ fun competitionStatusTextColor(status: String): Int = when (status.uppercase()) 
     "CLOSED" -> Color.parseColor("#6B7580")
     else -> Color.parseColor("#528FD0")
 }
+
+// ========================================
+// END OF CODE
+// ========================================

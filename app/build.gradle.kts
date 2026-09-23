@@ -1,3 +1,7 @@
+// ========================================
+// START OF CODE
+// ========================================
+// App module SDK, applicationId, and dependency declarations.
 plugins {
     alias(libs.plugins.android.application)
 }
@@ -45,3 +49,6 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
+// ========================================
+// END OF CODE
+// ========================================

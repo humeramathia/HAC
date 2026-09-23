@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Night-mode overrides for the Habibia app theme. -->
 <resources>
     <style name="Base.Theme.HACPrototype" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/habibia_green</item>
@@ -12,3 +16,6 @@
         <item name="materialButtonStyle">@style/Widget.Habibia.Button</item>
     </style>
 </resources>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

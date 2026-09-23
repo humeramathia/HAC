@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Small red unread/status indicator dot. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
     <solid android:color="@color/habibia_unread" />
     <size android:width="8dp" android:height="8dp" />
 </shape>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

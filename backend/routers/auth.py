@@ -1,3 +1,19 @@
+# ========================================
+# START OF CODE
+# ========================================
+
+"""Auth routes: register, verify email, login.
+
+Firebase Admin can create users but cannot exchange email/password for a
+client ID token. Sign-in therefore goes through Identity Toolkit REST
+(`signInWithPassword`) using FIREBASE_WEB_API_KEY.
+
+`accounts:sendOobCode` only sends the verification link when requestType
+is VERIFY_EMAIL and an idToken is supplied. That is why register signs
+the new user in immediately: the oob call needs that token, not the
+Admin SDK session.
+"""
+
 from datetime import date
 import os
 
@@ -25,6 +41,7 @@ class LoginBody(BaseModel):
 
 
 def _web_api_key() -> str:
+    """Identity Toolkit key (client API). Missing this breaks login and verification mail."""
     api_key = os.getenv("FIREBASE_WEB_API_KEY", "").strip()
     if not api_key:
         raise HTTPException(
@@ -35,6 +52,7 @@ def _web_api_key() -> str:
 
 
 def _sign_in(email: str, password: str) -> dict:
+    """Exchange email/password for localId + idToken via Identity Toolkit."""
     response = httpx.post(
         f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={_web_api_key()}",
         json={"email": email, "password": password, "returnSecureToken": True},
@@ -47,6 +65,12 @@ def _sign_in(email: str, password: str) -> dict:
 
 
 def _send_verification_email(id_token: str) -> None:
+    """Ask Firebase to email the VERIFY_EMAIL out-of-band link.
+
+    requestType must be exactly VERIFY_EMAIL. Other oob types (PASSWORD_RESET,
+    EMAIL_SIGNIN) would send a different email and would not flip
+    `email_verified` on the Auth user.
+    """
     response = httpx.post(
         f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={_web_api_key()}",
         json={"requestType": "VERIFY_EMAIL", "idToken": id_token},
@@ -66,6 +90,7 @@ def _send_verification_email(id_token: str) -> None:
 
 
 def _login_payload(uid: str, token: str) -> dict:
+    """Token plus the members row the Android app stores in HabibiaSession."""
     snap = get_db().collection("members").document(uid).get()
     if not snap.exists:
         raise HTTPException(status_code=401, detail="Member record not found")
@@ -74,6 +99,11 @@ def _login_payload(uid: str, token: str) -> dict:
 
 
 def _sync_email_verified(uid: str, auth_verified: bool, stored: dict) -> dict:
+    """Copy Auth's email_verified flag into Firestore once the link is tapped.
+
+    Firestore is what the rest of the API reads. Without this sync, a member
+    who verified in the inbox would still look unverified on /me.
+    """
     if auth_verified and not stored.get("emailVerified"):
         get_db().collection("members").document(uid).update({"emailVerified": True})
         stored = {**stored, "emailVerified": True}
@@ -82,6 +112,7 @@ def _sync_email_verified(uid: str, auth_verified: bool, stored: dict) -> dict:
 
 @router.post("/register", status_code=201)
 def register(body: RegisterBody):
+    """Create Auth user + members/memberProfiles docs, then send VERIFY_EMAIL."""
     try:
         user = fb_auth.create_user(email=body.email, password=body.password)
     except Exception as exc:
@@ -116,6 +147,7 @@ def register(body: RegisterBody):
 
 @router.post("/resend-verification")
 def resend_verification(body: LoginBody):
+    """Send another VERIFY_EMAIL if Auth still has email_verified == false."""
     signed_in = _sign_in(str(body.email), body.password)
     try:
         auth_user = fb_auth.get_user(signed_in["localId"])
@@ -130,6 +162,7 @@ def resend_verification(body: LoginBody):
 
 @router.post("/confirm-verification")
 def confirm_verification(body: LoginBody):
+    """After the inbox link is opened, sync Firestore and return a login token."""
     signed_in = _sign_in(str(body.email), body.password)
     uid = signed_in["localId"]
     try:
@@ -147,6 +180,7 @@ def confirm_verification(body: LoginBody):
 
 @router.post("/login")
 def login(body: LoginBody):
+    """Password sign-in; blocked until Auth or Firestore shows the email as verified."""
     signed_in = _sign_in(str(body.email), body.password)
     uid = signed_in["localId"]
     token = signed_in["idToken"]
@@ -166,4 +200,9 @@ def login(body: LoginBody):
 
 @router.post("/logout")
 def logout(_user: CurrentUser = Depends(get_current_user)):
+    """Acknowledge logout. Tokens are JWTs; the client drops the stored value."""
     return {"ok": True}
+
+# ========================================
+# END OF CODE
+# ========================================

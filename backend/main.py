@@ -1,3 +1,15 @@
+# ========================================
+# START OF CODE
+# ========================================
+
+"""Habibia Archery Club FastAPI entrypoint.
+
+Loads backend/.env before Firebase so Render/local credentials are available,
+initialises the Admin SDK once, then mounts every router. Swagger keeps a
+Bearer token across Try it out clicks (persistAuthorization) so testers do
+not have to re-paste the JWT after each request.
+"""
+
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -39,9 +51,15 @@ app.include_router(content.resources_router)
 
 @app.get("/")
 def root():
+    """Health check plus links to OpenAPI docs and the browser tester."""
     return {"ok": True, "docs": "/docs", "tester": "/tester"}
 
 
 @app.get("/tester")
 def tester():
+    """Serve the static HTML caller used to exercise authenticated routes."""
     return FileResponse(STATIC_DIR / "tester.html")
+
+# ========================================
+# END OF CODE
+# ========================================

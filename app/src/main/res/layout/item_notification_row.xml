@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Notification row with unread dot, title, message, and date. -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/notificationCard"
     style="@style/Widget.Habibia.Card"
@@ -53,3 +57,6 @@
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

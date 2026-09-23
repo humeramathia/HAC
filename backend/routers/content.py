@@ -1,3 +1,15 @@
+# ========================================
+# START OF CODE
+# ========================================
+
+"""Club content: announcements, per-member notifications, beginner resources.
+
+Three routers live in one module because they share the same payload
+helpers and admin/member split. Notifications are filtered to the caller
+so a member never sees another member's inbox. Resource categories are a
+closed set so the Android beginner list can group cards without free-text.
+"""
+
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -103,6 +115,7 @@ def delete_announcement(announcement_id: str, _user: CurrentUser = Depends(requi
 
 @notifications_router.get("")
 def list_notifications(user: CurrentUser = Depends(get_current_user)):
+    """Inbox for the signed-in UID only (Admin does not get every member's mail here)."""
     items = []
     for doc in get_db().collection("notifications").stream():
         data = doc.to_dict() or {}
@@ -173,3 +186,7 @@ def delete_resource(resource_id: str, _user: CurrentUser = Depends(require_admin
         raise HTTPException(status_code=404, detail="Resource not found")
     ref.delete()
     return {"ok": True}
+
+# ========================================
+# END OF CODE
+# ========================================

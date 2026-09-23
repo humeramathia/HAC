@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Soft gradient ring around the Login CTA. -->
 <!-- Soft outer ring (~2dp) for Login CTA -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
@@ -26,3 +30,6 @@
         </shape>
     </item>
 </layer-list>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

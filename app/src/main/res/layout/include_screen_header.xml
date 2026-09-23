@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Reusable screen header with optional back, logo, title, and action buttons. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/screenHeader"
     android:layout_width="match_parent"
@@ -74,3 +78,6 @@
         android:src="@drawable/ic_nav_profile"
         android:visibility="gone" />
 </LinearLayout>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

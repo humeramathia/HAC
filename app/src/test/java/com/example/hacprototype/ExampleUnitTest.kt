@@ -1,3 +1,7 @@
+// ========================================
+// START OF CODE
+// ========================================
+
 package com.example.hacprototype
 
 import org.junit.Test
@@ -15,3 +19,7 @@ class ExampleUnitTest {
         assertEquals(4, 2 + 2)
     }
 }
+
+// ========================================
+// END OF CODE
+// ========================================

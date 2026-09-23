@@ -1,4 +1,15 @@
-"""Upload firebase/seed/*.json into the live Firestore project."""
+# ========================================
+# START OF CODE
+# ========================================
+
+"""Upload firebase/seed/*.json into the live Firestore project.
+
+Seed files use MEMBER_UID / ADMIN_UID placeholders. Those strings must be
+replaced with the real Firebase Auth UIDs from uids.local.json so members,
+profiles, and scoreSessions line up with the accounts the app signs in as.
+`.set()` overwrites each document; re-running the seed replaces live data
+for those ids.
+"""
 
 from __future__ import annotations
 
@@ -29,6 +40,7 @@ COLLECTIONS = [
 
 
 def load_uids() -> tuple[str, str]:
+    """Read the two Auth UIDs; reject leftover placeholder text."""
     if not UIDS_PATH.exists():
         raise SystemExit(
             "Missing firebase/seed/uids.local.json\n"
@@ -45,6 +57,7 @@ def load_uids() -> tuple[str, str]:
 
 
 def replace_uids(value, member_uid: str, admin_uid: str):
+    """Walk strings, lists, and maps so both document ids and field values match Auth."""
     if isinstance(value, str):
         return value.replace("MEMBER_UID", member_uid).replace("ADMIN_UID", admin_uid)
     if isinstance(value, list):
@@ -58,6 +71,7 @@ def replace_uids(value, member_uid: str, admin_uid: str):
 
 
 def load_collection(name: str, member_uid: str, admin_uid: str) -> dict:
+    """Load one seed JSON and rewrite MEMBER_UID / ADMIN_UID keys to real document ids."""
     path = SEED_DIR / f"{name}.json"
     raw = json.loads(path.read_text(encoding="utf-8"))
     replaced = replace_uids(raw, member_uid, admin_uid)
@@ -100,3 +114,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+# ========================================
+# END OF CODE
+# ========================================

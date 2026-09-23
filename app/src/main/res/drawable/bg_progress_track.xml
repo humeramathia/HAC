@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Neutral track behind a progress fill. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <solid android:color="@color/habibia_surface_alt" />
     <corners android:radius="8dp" />
 </shape>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

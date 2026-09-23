@@ -1,3 +1,13 @@
+# ========================================
+# START OF CODE
+# ========================================
+
+"""External / club competitions. Signed-in read; Admin write.
+
+Status is a closed set (UPCOMING, REGISTRATION OPEN, CLOSED) so the app
+can disable sign-up UI without parsing free-text.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
@@ -83,3 +93,7 @@ def delete_competition(competition_id: str, _user: CurrentUser = Depends(require
         raise HTTPException(status_code=404, detail="Competition not found")
     ref.delete()
     return {"ok": True}
+
+# ========================================
+# END OF CODE
+# ========================================

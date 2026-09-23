@@ -1,5 +1,14 @@
+# ========================================
+# START OF CODE
+# ========================================
+
+# Python packages for FastAPI, Firestore Admin, and Identity Toolkit HTTP calls.
 fastapi
 uvicorn
 firebase-admin
 httpx
 python-dotenv
+
+# ========================================
+# END OF CODE
+# ========================================

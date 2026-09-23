@@ -1,3 +1,19 @@
+# ========================================
+# START OF CODE
+# ========================================
+
+"""Archery session maths used by member score routes and admin progress.
+
+League rounds are fixed at 10 ends × 6 arrows (60 arrows). That is the
+club league format, not a World Archery WA1440, so the API rejects any
+other end/arrow combination for type LEAGUE. Practice rounds keep the
+caller-chosen layout.
+
+Arrow values are 0–10. An X is the inner-10: it still scores 10, but is
+counted separately (`xCount`) for tie-breaks. A 10 that is not marked
+`isX` increments `tensCount` only.
+"""
+
 from __future__ import annotations
 
 from fastapi import HTTPException
@@ -8,6 +24,12 @@ LEAGUE_TOTAL_ARROWS = 60
 
 
 def calculate_session(body: dict) -> dict:
+    """Validate ends, sum scores, and attach derived stats.
+
+    maxScore is arrows × 10 (gold). averageArrow is total ÷ arrow count,
+    rounded to two decimals. Practice payloads drop ranking / fieldSize /
+    leagueName so those fields cannot leak onto a training round.
+    """
     session_type = str(body.get("type", "")).upper()
     if session_type not in ("PRACTICE", "LEAGUE"):
         raise HTTPException(status_code=400, detail="type must be PRACTICE or LEAGUE")
@@ -104,12 +126,14 @@ def calculate_session(body: dict) -> dict:
 
 
 def serialize_session(doc_id: str, data: dict) -> dict:
+    """Attach the Firestore document id without mutating the stored map."""
     payload = dict(data)
     payload["sessionId"] = doc_id
     return payload
 
 
 def session_progress(doc_id: str, data: dict) -> dict:
+    """Per-end totals for one session chart (labels stay aligned with endTotals)."""
     ends = data.get("ends") or []
     labels = [f"End {item.get('endNumber', i)}" for i, item in enumerate(ends, start=1)]
     end_totals = [int(item.get("total", 0)) for item in ends]
@@ -123,6 +147,7 @@ def session_progress(doc_id: str, data: dict) -> dict:
 
 
 def member_type_progress(member_id: str, session_type: str, sessions: list[dict]) -> dict:
+    """Chronological totals across many sessions of one type (practice or league)."""
     ordered = sorted(sessions, key=lambda item: item.get("date", ""))
     return {
         "memberId": member_id,
@@ -139,3 +164,7 @@ def member_type_progress(member_id: str, session_type: str, sessions: list[dict]
             for item in ordered
         ],
     }
+
+# ========================================
+# END OF CODE
+# ========================================

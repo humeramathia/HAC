@@ -1,3 +1,7 @@
+// ========================================
+// START OF CODE
+// ========================================
+// Root Gradle settings: plugin repos, Foojay toolchain, and the :app module.
 pluginManagement {
     repositories {
         google {
@@ -24,4 +28,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "HAC Prototype"
 include(":app")
+// ========================================
+// END OF CODE
+// ========================================
  

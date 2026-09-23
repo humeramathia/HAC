@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Member shell with tab container and bottom navigation. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -29,3 +33,6 @@
         app:itemTextColor="@color/habibia_bottom_nav_color" />
     </LinearLayout>
 </FrameLayout>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

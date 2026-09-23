@@ -1,3 +1,13 @@
+# ========================================
+# START OF CODE
+# ========================================
+
+"""Club calendar events. Any signed-in member can list; only Admin can write.
+
+`type` is Practice or Event so the Android calendar can chip-filter sessions
+without treating a social event as a training night.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
@@ -83,3 +93,7 @@ def delete_event(event_id: str, _user: CurrentUser = Depends(require_admin)):
         raise HTTPException(status_code=404, detail="Event not found")
     ref.delete()
     return {"ok": True}
+
+# ========================================
+# END OF CODE
+# ========================================

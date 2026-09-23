@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Filled gradient slot for a recorded arrow score. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <gradient
         android:angle="90"
@@ -7,3 +11,6 @@
         android:type="linear" />
     <corners android:radius="12dp" />
 </shape>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

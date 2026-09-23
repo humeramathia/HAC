@@ -1,3 +1,7 @@
+// ========================================
+// START OF CODE
+// ========================================
+
 package com.example.hacprototype
 
 import android.graphics.Color
@@ -22,6 +26,9 @@ import com.google.android.material.textfield.TextInputLayout
 import org.json.JSONArray
 import org.json.JSONObject
 
+/**
+ * Scores hub: live practice/league stats plus entry points for setup and history.
+ */
 class ScoresFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_scores, container, false)
@@ -61,6 +68,7 @@ class ScoresFragment : Fragment() {
     }
 }
 
+/** Choose practice vs league before building a draft session. */
 class RecordScoreFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_record_score, container, false)
@@ -77,6 +85,10 @@ class RecordScoreFragment : Fragment() {
     }
 }
 
+/**
+ * Practice configuration. Distance/arrows/ends can be custom; the draft is
+ * stored in [HabibiaSession] so [ScoreEntryFragment] can survive navigation.
+ */
 class PracticeSetupFragment : Fragment() {
     private var selectedDistance = 18
     private var selectedArrows = 6
@@ -180,6 +192,10 @@ class PracticeSetupFragment : Fragment() {
     }
 }
 
+/**
+ * League setup. Arrow count and ends come from [LeagueStandard] (60 / 6);
+ * only distance and title are member-chosen.
+ */
 class LeagueSetupFragment : Fragment() {
     private var selectedDistance = LeagueStandard.DEFAULT_DISTANCE
 
@@ -231,6 +247,10 @@ class LeagueSetupFragment : Fragment() {
     }
 }
 
+/**
+ * End-by-end keypad. Arrows live in [HabibiaSession.currentEndArrows] until
+ * the end is saved, then the completed session is POSTed to `/score-sessions`.
+ */
 class ScoreEntryFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_score_entry, container, false)
@@ -377,6 +397,7 @@ class ScoreEntryFragment : Fragment() {
         }
         if (session.completedEnds >= session.numberOfEnds) {
             if (session.type == SessionType.LEAGUE && session.ranking == null) {
+                // Placeholder standings until the API computes club rank.
                 session.ranking = 3
                 session.fieldSize = 12
             }
@@ -410,6 +431,7 @@ class ScoreEntryFragment : Fragment() {
     private val Int.dp: Int get() = (this * resources.displayMetrics.density).toInt()
 }
 
+/** Reloads the saved session so totals match the API, not the in-memory draft. */
 class SessionCompleteFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_session_complete, container, false)
@@ -429,6 +451,7 @@ class SessionCompleteFragment : Fragment() {
     }
 }
 
+/** Practice history from `/score-sessions?type=PRACTICE`. */
 class PracticeScoresFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_session_history, container, false)
@@ -453,6 +476,7 @@ class PracticeScoresFragment : Fragment() {
     }
 }
 
+/** League history from `/score-sessions?type=LEAGUE`. */
 class LeagueScoresFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_session_history, container, false)
@@ -477,6 +501,10 @@ class LeagueScoresFragment : Fragment() {
     }
 }
 
+/**
+ * End breakdown for [HabibiaSession.selectedSessionId].
+ * Admins also fetch the member name for the subtitle.
+ */
 class ScoreDetailsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_score_details, container, false)
@@ -503,6 +531,10 @@ class ScoreDetailsFragment : Fragment() {
     }
 }
 
+/**
+ * Practice or league progress chart. [HabibiaSession.progressType] chooses
+ * the dataset; admins load `/admin/members/{id}/…` instead of `/score-sessions`.
+ */
 class ProgressFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_score_progress, container, false)
@@ -528,6 +560,8 @@ class ProgressFragment : Fragment() {
             } else {
                 null
             }
+            // Progress payload is fetched for side effects / future bind; the
+            // chart below is still derived locally from [sessions].
             if (HabibiaSession.isAdmin && !memberId.isNullOrBlank()) {
                 HabibiaApi.get("/admin/members/$memberId/progress?type=$typeQuery")
             } else if (sessions.isNotEmpty()) {
@@ -541,6 +575,7 @@ class ProgressFragment : Fragment() {
     }
 }
 
+/** Admin picker: each row loads that member's practice and league sessions. */
 class AdminMemberListFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_admin_member_list, container, false)
@@ -607,6 +642,7 @@ class AdminMemberListFragment : Fragment() {
     }
 }
 
+/** One member's practice and league summaries plus history lists. */
 class AdminMemberProgressFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_admin_member_progress, container, false)
@@ -637,6 +673,7 @@ class AdminMemberProgressFragment : Fragment() {
             )
             HabibiaApi.get("/admin/members/$memberId/progress?type=PRACTICE")
             HabibiaApi.get("/admin/members/$memberId/progress?type=LEAGUE")
+            // Progress JSON is unused; stats on this screen come from sessions.
             Triple(member, practice, league)
         }) { (member, practice, league) ->
             if (!isAdded) return@apiInBackground
@@ -656,6 +693,7 @@ class AdminMemberProgressFragment : Fragment() {
     }
 }
 
+/** Builds an empty in-memory session; [sessionId] is replaced by the API on save. */
 private fun startDraft(
     type: SessionType,
     title: String,
@@ -719,6 +757,10 @@ private fun Fragment.bindHistory(container: LinearLayout, sessions: List<ScoreSe
     }
 }
 
+/**
+ * Chip row plus a Custom chip (tag `-1`). Custom keeps the last numeric
+ * selection until [readChoice] reads the text field.
+ */
 private fun bindChoiceChips(
     group: ChipGroup,
     values: List<Int>,
@@ -757,6 +799,7 @@ private fun readChoice(selected: Int, input: TextInputEditText, custom: Boolean)
     return input.text?.toString()?.toIntOrNull()
 }
 
+/** Keypad token to [ArrowScore]; `X` is 10 with [ArrowScore.isX]. */
 private fun parseArrowInput(token: String): ArrowScore? {
     val cleaned = token.trim()
     if (cleaned.equals("X", ignoreCase = true)) return ArrowScore(10, true)
@@ -937,6 +980,7 @@ private fun Fragment.bindProgressScreen(
     }
 }
 
+/** Percent change from oldest to newest total; 0 when there are fewer than two. */
 private fun sessionImprovement(sessions: List<ScoreSession>): Double {
     val ordered = sessions.sortedBy { it.date }
     if (ordered.size < 2) return 0.0
@@ -946,6 +990,7 @@ private fun sessionImprovement(sessions: List<ScoreSession>): Double {
     return ((latest - first) / first) * 100.0
 }
 
+/** Serializes a completed draft for `POST /score-sessions`. */
 private fun scoreSessionToPostJson(session: ScoreSession): String {
     val body = JSONObject()
     body.put("type", session.type.name)
@@ -1031,6 +1076,7 @@ private fun parseMember(obj: JSONObject): Member = Member(
     dateJoined = obj.optString("dateJoined")
 )
 
+/** [JSONObject.optInt] returns 0 for missing keys; we need a true optional. */
 private fun JSONObject.optNullableInt(key: String): Int? {
     if (!has(key) || isNull(key)) return null
     return optInt(key)
@@ -1040,3 +1086,8 @@ private fun JSONObject.optNullableString(key: String): String? {
     if (!has(key) || isNull(key)) return null
     return optString(key).ifBlank { null }
 }
+
+// ========================================
+// END OF CODE
+// ========================================
+

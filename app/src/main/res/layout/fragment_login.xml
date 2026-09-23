@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================
+     START OF CODE
+     ======================================== -->
+<!-- Sign-in form with Create Account and Demo Member/Admin shortcuts. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -238,3 +242,6 @@
         </LinearLayout>
     </ScrollView>
 </FrameLayout>
+<!-- ========================================
+     END OF CODE
+     ======================================== -->

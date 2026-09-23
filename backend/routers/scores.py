@@ -1,3 +1,14 @@
+# ========================================
+# START OF CODE
+# ========================================
+
+"""Member score sessions. Create/list own rounds; admins may open any session.
+
+League vs practice is chosen by the `type` query/body. Totals are computed
+in `scoring.calculate_session` so the stored document already has
+totalScore / tensCount / xCount and the client does not re-sum arrows.
+"""
+
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -35,6 +46,7 @@ class ScoreSessionBody(BaseModel):
 
 
 def _load_own_or_admin(session_id: str, user: CurrentUser) -> tuple[str, dict[str, Any]]:
+    """Members may only read their own session; Admin may read anyone's."""
     snap = get_db().collection("scoreSessions").document(session_id).get()
     if not snap.exists:
         raise HTTPException(status_code=404, detail="Score session not found")
@@ -87,3 +99,7 @@ def get_progress(session_id: str, user: CurrentUser = Depends(get_current_user))
 def get_session(session_id: str, user: CurrentUser = Depends(get_current_user)):
     doc_id, data = _load_own_or_admin(session_id, user)
     return serialize_session(doc_id, data)
+
+# ========================================
+# END OF CODE
+# ========================================
