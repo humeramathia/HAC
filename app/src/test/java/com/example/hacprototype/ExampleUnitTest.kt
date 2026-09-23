@@ -4,19 +4,14 @@
 
 package com.example.hacprototype
 
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
-import org.junit.Assert.*
-
-/**
- * Example local unit test, which will execute on the development machine (host).
- *
- * See [testing documentation](http://d.android.com/tools/testing).
- */
+/** Smoke test so the JVM test runner always has a trivial passing case. */
 class ExampleUnitTest {
     @Test
-    fun addition_isCorrect() {
-        assertEquals(4, 2 + 2)
+    fun junitRunnerIsWired() {
+        assertEquals(SessionType.PRACTICE.name, "PRACTICE")
     }
 }
 

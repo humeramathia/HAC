@@ -27,8 +27,9 @@ This is an academic team project. The Android UI talks only to a Python API. The
 17. [Host the API on Render](#host-the-api-on-render)
 18. [Design system](#design-system)
 19. [Team rules](#team-rules)
-20. [Common problems](#common-problems)
-21. [Further reading](#further-reading)
+20. [Automated testing](#automated-testing)
+21. [Common problems](#common-problems)
+22. [Further reading](#further-reading)
 
 ---
 
@@ -232,6 +233,7 @@ Prototype/
 │   ├── .env.example                   ← copy to .env locally (gitignored)
 │   ├── API.md                         ← full endpoint contract
 │   ├── static/tester.html             ← browser API tester
+│   ├── tests/                         ← pytest
 │   └── routers/
 │       ├── auth.py                    ← register, login, verify, logout
 │       ├── profile.py                 ← /me and /me/profile
@@ -241,6 +243,7 @@ Prototype/
 │       ├── admin.py                   ← members and their progress
 │       └── content.py                 ← announcements, notifications, resources
 │
+├── .github/workflows/test.yml         ← CI (pytest + Gradle unit tests)
 └── firebase/
     ├── SCHEMA.md                      ← the only allowed fields
     ├── firestore.rules
@@ -559,6 +562,52 @@ Suggested work split (also in `backend/API.md`):
 | Calendar | `events.py`, `competitions.py`, calendar fragments |
 | Scoring | `scoring.py`, `scores.py`, `HabibiaScoreFragments.kt` |
 | Admin and comms | `admin.py`, `content.py`, manage-* fragments |
+
+---
+
+## Automated testing
+
+The repo has two suites. Neither needs a running emulator or a live Firestore project.
+
+### Python API (`backend/tests`)
+
+pytest covers scoring maths, payload helpers, Firebase credential parsing, and HTTP routes against an in-memory fake database.
+
+```powershell
+cd backend
+py -m pip install -r requirements.txt
+py -m pytest
+```
+
+`HABIBIA_TESTING=1` is set by `tests/conftest.py` so importing the app does not call Firebase.
+
+| File | What it checks |
+|---|---|
+| `tests/test_scoring.py` | Totals, X vs 10, league must be 60 arrows |
+| `tests/test_deps.py` | Member/admin payloads and the 403 admin gate |
+| `tests/test_firebase_client.py` | JSON vs path, wrapped quotes, `https:/` repair |
+| `tests/test_api_routes.py` | Health, events auth, notification scoping, save practice |
+
+### Android JVM tests (`app/src/test`)
+
+JUnit tests run on the desktop, not on an emulator.
+
+```powershell
+.\gradlew.bat test
+```
+
+In Android Studio: **app → test → java → com.example.hacprototype → Run Tests**.
+
+| File | What it checks |
+|---|---|
+| `ScoreSessionTest.kt` | Session totals, X labels, league 60-arrow constants |
+| `DisplayFormatTest.kt` | ISO dates, averages, improvement sign |
+
+The instrumented test in `app/src/androidTest` still checks the package name on a device or emulator (`.\gradlew.bat connectedDebugAndroidTest`).
+
+### CI
+
+`.github/workflows/test.yml` runs pytest and `./gradlew test` on every push and pull request.
 
 ---
 

@@ -2,13 +2,7 @@
 # START OF CODE
 # ========================================
 
-# Python packages for FastAPI, Firestore Admin, and Identity Toolkit HTTP calls.
-fastapi
-uvicorn
-firebase-admin
-httpx
-python-dotenv
-pytest
+"""Automated tests for the Habibia FastAPI backend."""
 
 # ========================================
 # END OF CODE

@@ -10,6 +10,7 @@ Bearer token across Try it out clicks (persistAuthorization) so testers do
 not have to re-paste the JWT after each request.
 """
 
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -22,7 +23,9 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 from firebase_client import init_firebase
 from routers import admin, auth, competitions, content, events, profile, scores
 
-init_firebase()
+# pytest sets HABIBIA_TESTING so the suite can import the app without a service account.
+if os.getenv("HABIBIA_TESTING") != "1":
+    init_firebase()
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
