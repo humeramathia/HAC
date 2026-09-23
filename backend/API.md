@@ -27,8 +27,26 @@ If a field is not in `firebase/SCHEMA.md`, do not add it in Python or Kotlin unt
 
 ## Base URL
 
-Local: `http://10.0.2.2:8000` on the Android emulator  
-Hosted later: one HTTPS URL, for example Render or Cloud Run
+Local emulator: `http://10.0.2.2:8000`  
+Hosted: the Render HTTPS URL, set in `HabibiaApi.HOSTED_URL`
+
+### Host on Render (no local uvicorn)
+
+The repo includes `render.yaml`. After you push this branch to GitHub:
+
+1. Open [render.com](https://render.com) and sign in with GitHub.
+2. New → Blueprint, pick `humeramathia/HAC`, and apply `render.yaml`.
+   Or New → Web Service, connect the same repo, and use:
+   - Root Directory: `backend`
+   - Runtime: Python
+   - Build: `pip install -r requirements.txt`
+   - Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+3. Add environment variables (do not commit these):
+   - `FIREBASE_WEB_API_KEY` — same value as `backend/.env`
+   - `FIREBASE_SERVICE_ACCOUNT` — the service account JSON as one line
+4. Deploy, then put the `https://….onrender.com` URL in `HabibiaApi.HOSTED_URL`.
+
+The free instance sleeps after idle time. The first request can take 30–50 seconds.
 
 All requests use JSON.  
 Protected routes send:

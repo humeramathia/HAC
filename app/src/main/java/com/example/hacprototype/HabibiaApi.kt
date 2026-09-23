@@ -14,7 +14,12 @@ import java.nio.charset.StandardCharsets
 class HabibiaApiException(val statusCode: Int, message: String) : Exception(message)
 
 object HabibiaApi {
-    const val BASE_URL = "http://10.0.2.2:8000"
+    // After Render is live, paste the https://….onrender.com URL here (no trailing slash).
+    private const val HOSTED_URL = ""
+    private const val LOCAL_EMULATOR_URL = "http://10.0.2.2:8000"
+
+    val BASE_URL: String
+        get() = HOSTED_URL.ifBlank { LOCAL_EMULATOR_URL }
 
     fun get(path: String, token: String? = HabibiaSession.authToken): String =
         request("GET", path, body = null, token = token)
@@ -38,8 +43,8 @@ object HabibiaApi {
         val connection = url.openConnection() as HttpURLConnection
         try {
             connection.requestMethod = method
-            connection.connectTimeout = 15000
-            connection.readTimeout = 20000
+            connection.connectTimeout = 50000
+            connection.readTimeout = 50000
             connection.setRequestProperty("Accept", "application/json")
             connection.setRequestProperty("Content-Type", "application/json")
             if (!token.isNullOrBlank()) {
