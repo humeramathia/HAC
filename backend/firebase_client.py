@@ -32,13 +32,21 @@ def _clean_env(raw: str) -> str:
     return cleaned
 
 
+def _repair_account(data: dict) -> dict:
+    for key, value in list(data.items()):
+        if isinstance(value, str) and value.startswith("https:/") and not value.startswith("https://"):
+            data[key] = "https://" + value[len("https:/") :]
+    return data
+
+
 def _account_from_text(raw: str) -> dict | None:
     cleaned = _clean_env(raw)
     if not cleaned:
         return None
-    path = Path(cleaned)
-    if path.is_file():
-        cleaned = path.read_text(encoding="utf-8").lstrip("\ufeff")
+    if not cleaned.startswith("{") and len(cleaned) < 512:
+        path = Path(cleaned)
+        if path.is_file():
+            cleaned = path.read_text(encoding="utf-8").lstrip("\ufeff")
     try:
         data = json.loads(cleaned)
     except json.JSONDecodeError as error:
@@ -53,7 +61,7 @@ def _account_from_text(raw: str) -> dict | None:
             "FIREBASE_SERVICE_ACCOUNT must be the service account JSON object "
             "(it should include \"type\": \"service_account\")."
         )
-    return data
+    return _repair_account(data)
 
 
 def _credential() -> credentials.Base:
