@@ -37,7 +37,9 @@ jobs:
           distribution: temurin
           java-version: "17"
       - name: Run JVM unit tests
-        run: ./gradlew test --no-daemon
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test --no-daemon
 
 # ========================================
 # END OF CODE

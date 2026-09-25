@@ -1,0 +1,10 @@
+# ========================================
+# START OF CODE
+# ========================================
+# Keep the Unix Gradle wrapper runnable on Linux CI after Windows checkouts.
+gradlew text eol=lf
+*.bat text eol=crlf
+# ========================================
+# END OF CODE
+# ========================================
+
