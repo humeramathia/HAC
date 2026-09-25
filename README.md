@@ -4,7 +4,8 @@ Android club app for [Habibia Archery Club](https://haclub.co.za/). Members sign
 
 This is an academic team project. The Android UI talks only to a Python API. The API is the only process that reads or writes Cloud Firestore.
 
-**Presentation:** [https://youtu.be/tm-dFHZ1HUg](https://youtu.be/tm-dFHZ1HUg)
+**Presentation:** [https://youtu.be/tm-dFHZ1HUg](https://youtu.be/tm-dFHZ1HUg)  
+**Progress report:** [docs/Progress-Report-Axion-Innovations-Meeting.pdf](docs/Progress-Report-Axion-Innovations-Meeting.pdf)
 
 ---
 
@@ -246,6 +247,7 @@ Prototype/
 │       └── content.py                 ← announcements, notifications, resources
 │
 ├── .github/workflows/test.yml         ← CI (pytest + Gradle unit tests)
+├── docs/                              ← progress report and other project documents
 └── firebase/
     ├── SCHEMA.md                      ← the only allowed fields
     ├── firestore.rules
