@@ -7,6 +7,8 @@ This is an academic team project. The Android UI talks only to a Python API. The
 **Presentation:** [https://youtu.be/tm-dFHZ1HUg](https://youtu.be/tm-dFHZ1HUg)  
 **Progress report:** [docs/Progress-Report-Axion-Innovations-Meeting.pdf](docs/Progress-Report-Axion-Innovations-Meeting.pdf)
 
+**Note:** Resources link is currently unavailable due Habibia Archery Club still filming resource videos.
+
 ---
 
 ## Contents
@@ -617,26 +619,11 @@ The instrumented test in `app/src/androidTest` still checks the package name on 
 
 ## Common problems
 
-**Login spins, then “failed to connect to /10.0.2.2 (port 8000)”**  
-The app is on the local emulator URL and uvicorn is not running. Either start the API, or keep `HOSTED_URL` set to the Render URL and rebuild.
-
 **First login on the hosted API is very slow**  
 Render free tier is waking up. Wait once; later requests are fast.
 
-**“FIREBASE_SERVICE_ACCOUNT is not valid JSON” on Render**  
-Paste the whole service account file as one line starting with `{`. Do not wrap it in extra quotes.
-
 **Verification email never arrives**  
 The API must send `requestType: VERIFY_EMAIL`. Check spam. Use **Resend** on the verification screen. Confirm `FIREBASE_WEB_API_KEY` is the Firebase **Web** API key.
-
-**Gradle `FileHasher Access is denied`**  
-Windows Controlled folder access is blocking writes under Documents. Allow Android Studio / Java, or move the project out of a protected folder.
-
-**Release build on a real phone cannot reach `10.0.2.2`**  
-That address only exists inside the emulator. Use the Render HTTPS URL.
-
-**Admin API calls say you do not have permission**  
-You used **Demo Admin**, which does not store a token. Log in as the real admin account.
 
 ---
 
@@ -654,3 +641,6 @@ You used **Demo Admin**, which does not store a token. Log in as the real admin 
 ## Licence / academic use
 
 Developed for academic assessment as a software development project for Habibia Archery Club.
+
+## Reference 
+Cursor was used to help handle merge conflicts.
